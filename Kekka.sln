@@ -5,6 +5,8 @@ VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kekka", "Kekka\Kekka.csproj", "{438F3D18-A875-48D9-A966-1C555B715292}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kekka.Tests", "Kekka.Tests\Kekka.Tests.csproj", "{A4270052-7436-4ED1-A94F-9A8F4FF15821}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{438F3D18-A875-48D9-A966-1C555B715292}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{438F3D18-A875-48D9-A966-1C555B715292}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{438F3D18-A875-48D9-A966-1C555B715292}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4270052-7436-4ED1-A94F-9A8F4FF15821}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4270052-7436-4ED1-A94F-9A8F4FF15821}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4270052-7436-4ED1-A94F-9A8F4FF15821}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4270052-7436-4ED1-A94F-9A8F4FF15821}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
