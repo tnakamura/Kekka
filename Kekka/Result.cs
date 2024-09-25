@@ -116,12 +116,12 @@ public static partial class ResultExtensions
 
     public static async Task<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TSuccess2, TFailure>(
         this Task<Result<TSuccess1, TFailure>> source,
-        Func<TSuccess1, Result<TSuccess2, TFailure>> selector)
+        Func<TSuccess1, Task<Result<TSuccess2, TFailure>>> selector)
     {
         var result = await source;
         if (result is OkResult<TSuccess1, TFailure> ok)
         {
-            return selector(ok.Value);
+            return await selector(ok.Value);
         }
         else if (result is ErrorResult<TSuccess1, TFailure> error)
         {
@@ -135,13 +135,13 @@ public static partial class ResultExtensions
 
     public static async Task<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TCollection, TSuccess2, TFailure>(
         this Task<Result<TSuccess1, TFailure>> source,
-        Func<TSuccess1, Result<TCollection, TFailure>> selector,
+        Func<TSuccess1, Task<Result<TCollection, TFailure>>> selector,
         Func<TSuccess1, TCollection, TSuccess2> resultSelector)
     {
         var result = await source;
         if (result is OkResult<TSuccess1, TFailure> ok)
         {
-            var result2 = selector(ok.Value);
+            var result2 = await selector(ok.Value);
             if (result2 is OkResult<TCollection, TFailure> ok2)
             {
                 var result3 = resultSelector(ok.Value, ok2.Value);
