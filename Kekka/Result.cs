@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace Kekka;
 
@@ -40,7 +41,7 @@ public static class Result
     }
 }
 
-public static class ResultExtensions
+public static partial class ResultExtensions
 {
     private static Result<TSuccess, TFailure> Ok<TSuccess, TFailure>(this TSuccess value)
     {
@@ -89,5 +90,79 @@ public static class ResultExtensions
         Func<TSuccess1, TCollection, TSuccess2> resultSelector)
     {
         return source.SelectMany(x => selector(x).SelectMany(y => resultSelector(x, y).Ok<TSuccess2, TFailure>()));
+    }
+}
+
+public static partial class ResultExtensions
+{
+    public static async Task<Result<TSuccess2, TFailure>> Select<TSuccess1, TSuccess2, TFailure>(
+        this Task<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, TSuccess2> selector)
+    {
+        var result = await source;
+        if (result is OkResult<TSuccess1, TFailure> ok)
+        {
+            return Result.Ok<TSuccess2, TFailure>(selector(ok.Value));
+        }
+        else if (result is ErrorResult<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+
+    public static async Task<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TSuccess2, TFailure>(
+        this Task<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, Result<TSuccess2, TFailure>> selector)
+    {
+        var result = await source;
+        if (result is OkResult<TSuccess1, TFailure> ok)
+        {
+            return selector(ok.Value);
+        }
+        else if (result is ErrorResult<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+
+    public static async Task<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TCollection, TSuccess2, TFailure>(
+        this Task<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, Result<TCollection, TFailure>> selector,
+        Func<TSuccess1, TCollection, TSuccess2> resultSelector)
+    {
+        var result = await source;
+        if (result is OkResult<TSuccess1, TFailure> ok)
+        {
+            var result2 = selector(ok.Value);
+            if (result2 is OkResult<TCollection, TFailure> ok2)
+            {
+                var result3 = resultSelector(ok.Value, ok2.Value);
+                return Result.Ok<TSuccess2, TFailure>(result3);
+            }
+            else if (result2 is ErrorResult<TCollection, TFailure> error2)
+            {
+                return Result.Error<TSuccess2, TFailure>(error2.Value);
+            }
+            else
+            {
+                throw new NotSupportedException($"{result2.GetType().FullName} is not supported.");
+            }
+        }
+        else if (result is ErrorResult<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
     }
 }
