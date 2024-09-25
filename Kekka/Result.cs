@@ -39,15 +39,26 @@ public static class Result
     {
         return new ErrorResult<TSuccess, TFailure>(value);
     }
+
+    public static Task<Result<TSuccess, TFailure>> OkAsync<TSuccess, TFailure>(TSuccess value)
+    {
+        return Task.FromResult(Ok<TSuccess, TFailure>(value));
+    }
+
+    public static Task<Result<TSuccess, TFailure>> ErrorAsync<TSuccess, TFailure>(TFailure value)
+    {
+        return Task.FromResult(Error<TSuccess, TFailure>(value));
+    }
 }
 
 public static partial class ResultExtensions
 {
-    private static Result<TSuccess, TFailure> Ok<TSuccess, TFailure>(this TSuccess value)
-    {
-        return Result.Ok<TSuccess, TFailure>(value);
-    }
+    public static Task<Result<TSuccess, TFailure>> AsTask<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
+        Task.FromResult(result);
+}
 
+static partial class ResultExtensions
+{
     public static Result<TSuccess2, TFailure> Select<TSuccess1, TSuccess2, TFailure>(
         this Result<TSuccess1, TFailure> source,
         Func<TSuccess1, TSuccess2> selector)
@@ -89,11 +100,35 @@ public static partial class ResultExtensions
         Func<TSuccess1, Result<TCollection, TFailure>> selector,
         Func<TSuccess1, TCollection, TSuccess2> resultSelector)
     {
-        return source.SelectMany(x => selector(x).SelectMany(y => resultSelector(x, y).Ok<TSuccess2, TFailure>()));
+        if (source is OkResult<TSuccess1, TFailure> ok)
+        {
+            var result = selector(ok.Value);
+            if (result is OkResult<TCollection, TFailure> ok2)
+            {
+                var result2 = resultSelector(ok.Value, ok2.Value);
+                return Result.Ok<TSuccess2, TFailure>(result2);
+            }
+            else if (result is ErrorResult<TCollection, TFailure> error2)
+            {
+                return Result.Error<TSuccess2, TFailure>(error2.Value);
+            }
+            else
+            {
+                throw new NotSupportedException($"{source.GetType().FullName} is not supported.");
+            }
+        }
+        else if (source is ErrorResult<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{source.GetType().FullName} is not supported.");
+        }
     }
 }
 
-public static partial class ResultExtensions
+static partial class ResultExtensions
 {
     public static async Task<Result<TSuccess2, TFailure>> Select<TSuccess1, TSuccess2, TFailure>(
         this Task<Result<TSuccess1, TFailure>> source,
