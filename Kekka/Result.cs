@@ -39,16 +39,6 @@ public static class Result
     {
         return new ErrorResult<TSuccess, TFailure>(value);
     }
-
-    public static Task<Result<TSuccess, TFailure>> OkAsync<TSuccess, TFailure>(TSuccess value)
-    {
-        return Task.FromResult(Ok<TSuccess, TFailure>(value));
-    }
-
-    public static Task<Result<TSuccess, TFailure>> ErrorAsync<TSuccess, TFailure>(TFailure value)
-    {
-        return Task.FromResult(Error<TSuccess, TFailure>(value));
-    }
 }
 
 public static partial class ResultExtensions
