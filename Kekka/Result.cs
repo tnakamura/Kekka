@@ -20,12 +20,12 @@ public sealed class OkResult<TSuccess, TFailure> : Result<TSuccess, TFailure>
 
 public sealed class ErrorResult<TSuccess, TFailure> : Result<TSuccess, TFailure>
 {
-    internal ErrorResult(TFailure value)
+    internal ErrorResult(TFailure error)
     {
-        Value = value;
+        Error = error;
     }
 
-    public TFailure Value { get; }
+    public TFailure Error { get; }
 }
 
 public static class Result
@@ -35,9 +35,9 @@ public static class Result
         return new OkResult<TSuccess, TFailure>(value);
     }
 
-    public static Result<TSuccess, TFailure> Error<TSuccess, TFailure>(TFailure value)
+    public static Result<TSuccess, TFailure> Error<TSuccess, TFailure>(TFailure error)
     {
-        return new ErrorResult<TSuccess, TFailure>(value);
+        return new ErrorResult<TSuccess, TFailure>(error);
     }
 }
 
@@ -59,7 +59,7 @@ static partial class ResultExtensions
         }
         else if (source is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {
@@ -77,7 +77,7 @@ static partial class ResultExtensions
         }
         else if (source is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {
@@ -100,7 +100,7 @@ static partial class ResultExtensions
             }
             else if (result is ErrorResult<TCollection, TFailure> error2)
             {
-                return Result.Error<TSuccess2, TFailure>(error2.Value);
+                return Result.Error<TSuccess2, TFailure>(error2.Error);
             }
             else
             {
@@ -109,7 +109,7 @@ static partial class ResultExtensions
         }
         else if (source is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {
@@ -131,7 +131,7 @@ static partial class ResultExtensions
         }
         else if (result is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {
@@ -150,7 +150,7 @@ static partial class ResultExtensions
         }
         else if (result is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {
@@ -174,7 +174,7 @@ static partial class ResultExtensions
             }
             else if (result2 is ErrorResult<TCollection, TFailure> error2)
             {
-                return Result.Error<TSuccess2, TFailure>(error2.Value);
+                return Result.Error<TSuccess2, TFailure>(error2.Error);
             }
             else
             {
@@ -183,7 +183,7 @@ static partial class ResultExtensions
         }
         else if (result is ErrorResult<TSuccess1, TFailure> error)
         {
-            return Result.Error<TSuccess2, TFailure>(error.Value);
+            return Result.Error<TSuccess2, TFailure>(error.Error);
         }
         else
         {

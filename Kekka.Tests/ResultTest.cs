@@ -30,7 +30,7 @@ public class ResultTest
                      from y in Result.Error<decimal, Exception>(new ArgumentException())
                      select x + y;
         Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Value);
+        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
     }
 
     [Fact]
@@ -41,7 +41,7 @@ public class ResultTest
                      from z in Result.Ok<decimal, Exception>(y)
                      select x + y + z;
         Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Value);
+        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
     }
 
     [Fact]
@@ -78,7 +78,7 @@ public class ResultTest
             select x + y
         );
         Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Value);
+        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
     }
 
     [Fact]
@@ -91,7 +91,7 @@ public class ResultTest
             select x + y + z
         );
         Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Value);
+        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
     }
 
     [Fact]
