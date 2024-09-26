@@ -3,6 +3,18 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
 	  <LangVersion>latest</LangVersion>
+	  <Version>0.0.1</Version>
+	  <PackageReadmeFile>README.md</PackageReadmeFile>
+	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
+	  <PackageProjectUrl>https://github.com/tnakamura/Kekka</PackageProjectUrl>
+	  <RepositoryUrl>https://github.com/tnakamura/Kekka</RepositoryUrl>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
 </Project>
