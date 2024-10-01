@@ -1,8 +1,9 @@
 ﻿// We are defining types and submodules, so we can use a namespace
 // rather than a module at the top level
-namespace OrderTaking.PlaceOrder
+using Kekka;
+using OrderTaking.Common;
 
-open OrderTaking.Common
+namespace OrderTaking.PlaceOrder;
 
 // ==================================
 // This file contains the definitions of PUBLIC types (exposed at the boundary of the bounded context)
@@ -12,81 +13,68 @@ open OrderTaking.Common
 // ------------------------------------
 // inputs to the workflow
 
-type UnvalidatedCustomerInfo = {
-    FirstName : string
-    LastName : string
-    EmailAddress : string
-    }
+public record UnvalidatedCustomerInfo(
+    string FirstName,
+    string LastName,
+    string EmailAddress);
 
-type UnvalidatedAddress = {
-    AddressLine1 : string
-    AddressLine2 : string
-    AddressLine3 : string
-    AddressLine4 : string
-    City : string
-    ZipCode : string
-    }
+public record UnvalidatedAddress(
+    string AddressLine1,
+    string AddressLine2,
+    string AddressLine3,
+    string AddressLine4,
+    string City,
+    string ZipCode);
 
-type UnvalidatedOrderLine =  {
-    OrderLineId : string
-    ProductCode : string
-    Quantity : decimal
-    }
+public record UnvalidatedOrderLine(
+    string OrderLineId,
+    string ProductCode,
+    decimal Quantity);
 
-type UnvalidatedOrder = {
-    OrderId : string
-    CustomerInfo : UnvalidatedCustomerInfo
-    ShippingAddress : UnvalidatedAddress
-    BillingAddress : UnvalidatedAddress
-    Lines : UnvalidatedOrderLine list
-    }
-
+public record UnvalidatedOrder(
+    string OrderId,
+    UnvalidatedCustomerInfo CustomerInfo,
+    UnvalidatedAddress ShippingAddress,
+    UnvalidatedAddress BillingAddress,
+    IList<UnvalidatedOrderLine> Lines);
 
 // ------------------------------------
 // outputs from the workflow (success case)
 
 /// Event will be created if the Acknowledgment was successfully posted
-type OrderAcknowledgmentSent = {
-    OrderId : OrderId
-    EmailAddress : EmailAddress
-    }
+public record OrderAcknowledgmentSent(
+    OrderId OrderId,
+    EmailAddress EmailAddress) : PlaceOrderEvent;
 
 
 // priced state
-type PricedOrderLine = {
-    OrderLineId : OrderLineId
-    ProductCode : ProductCode
-    Quantity : OrderQuantity
-    LinePrice : Price
-    }
+public record PricedOrderLine(
+    OrderLineId OrderLineId,
+    ProductCode ProductCode,
+    OrderQuantity Quantity,
+    Price LinePrice);
 
-type PricedOrder = {
-    OrderId : OrderId
-    CustomerInfo : CustomerInfo
-    ShippingAddress : Address
-    BillingAddress : Address
-    AmountToBill : BillingAmount
-    Lines : PricedOrderLine list
-    }
+public record PricedOrder(
+    OrderId OrderId,
+    CustomerInfo CustomerInfo,
+    Address ShippingAddress,
+    Address BillingAddress,
+    BillingAmount AmountToBill,
+    IList<PricedOrderLine> Lines);
 
 /// Event to send to shipping context
-type OrderPlaced = PricedOrder
+public record OrderPlaced(PricedOrder Order) : PlaceOrderEvent;
 
 /// Event to send to billing context
 /// Will only be created if the AmountToBill is not zero
-type BillableOrderPlaced = {
-    OrderId : OrderId
-    BillingAddress: Address
-    AmountToBill : BillingAmount
-    }
+public record BillableOrderPlaced(
+    OrderId OrderId,
+    Address BillingAddress,
+    BillingAmount AmountToBill) : PlaceOrderEvent;
 
 /// The possible events resulting from the PlaceOrder workflow
 /// Not all events will occur, depending on the logic of the workflow
-type PlaceOrderEvent =
-    | OrderPlaced of OrderPlaced
-    | BillableOrderPlaced of BillableOrderPlaced
-    | AcknowledgmentSent  of OrderAcknowledgmentSent
-
+public partial record PlaceOrderEvent { }
 
 
 // ------------------------------------
@@ -94,31 +82,22 @@ type PlaceOrderEvent =
 
 
 /// All the things that can go wrong in this workflow
-type ValidationError = ValidationError of string
+public record ValidationError(string Error) : PlaceOrderError;
 
-type PricingError = PricingError of string
+public record PricingError(string Error) : PlaceOrderError;
 
-type ServiceInfo = {
-    Name : string
-    Endpoint: System.Uri
-    }
+public record ServiceInfo(
+    string Name,
+    System.Uri Endpoint);
 
-type RemoteServiceError = {
-    Service : ServiceInfo
-    Exception : System.Exception
-    }
+public record RemoteServiceError(
+   ServiceInfo Service,
+    System.Exception Exception) : PlaceOrderError;
 
-type PlaceOrderError =
-    | Validation of ValidationError
-    | Pricing of PricingError
-    | RemoteService of RemoteServiceError
-
+public record PlaceOrderError { }
 
 // ------------------------------------
 // the workflow itself
 
-type PlaceOrder =
-    UnvalidatedOrder -> AsyncResult<PlaceOrderEvent list,PlaceOrderError>
-
-
+public delegate Task<Result<IList<PlaceOrderEvent>, PlaceOrderError>> PlaceOrder(UnvalidatedOrder order);
 
