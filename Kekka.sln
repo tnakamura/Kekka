@@ -1,11 +1,14 @@
-﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35219.272
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kekka", "Kekka\Kekka.csproj", "{438F3D18-A875-48D9-A966-1C555B715292}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kekka", "src\Kekka\Kekka.csproj", "{438F3D18-A875-48D9-A966-1C555B715292}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kekka.Tests", "Kekka.Tests\Kekka.Tests.csproj", "{A4270052-7436-4ED1-A94F-9A8F4FF15821}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Kekka.Tests", "test\Kekka.Tests\Kekka.Tests.csproj", "{A4270052-7436-4ED1-A94F-9A8F4FF15821}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{61694D22-BED0-4203-8E7A-00082EEC0731}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{C7D7B8AB-4841-43B8-9A39-06C9FDE6363B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +27,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{438F3D18-A875-48D9-A966-1C555B715292} = {61694D22-BED0-4203-8E7A-00082EEC0731}
+		{A4270052-7436-4ED1-A94F-9A8F4FF15821} = {C7D7B8AB-4841-43B8-9A39-06C9FDE6363B}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {11C80353-F4EF-41ED-AA44-A9E2BE643A0F}
