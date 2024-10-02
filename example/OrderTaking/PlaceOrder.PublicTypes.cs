@@ -20,9 +20,9 @@ public record UnvalidatedCustomerInfo(
 
 public record UnvalidatedAddress(
     string AddressLine1,
-    string AddressLine2,
-    string AddressLine3,
-    string AddressLine4,
+    string? AddressLine2,
+    string? AddressLine3,
+    string? AddressLine4,
     string City,
     string ZipCode);
 
@@ -82,9 +82,9 @@ public partial record PlaceOrderEvent { }
 
 
 /// All the things that can go wrong in this workflow
-public record ValidationError(string Error) : PlaceOrderError;
+public record ValidationError(string Message) : PlaceOrderError;
 
-public record PricingError(string Error) : PlaceOrderError;
+public record PricingError(string Message) : PlaceOrderError;
 
 public record ServiceInfo(
     string Name,

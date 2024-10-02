@@ -1,4 +1,5 @@
-﻿using Kekka;
+﻿using System.Runtime.CompilerServices;
+using Kekka;
 
 namespace OrderTaking.Common;
 
@@ -186,7 +187,7 @@ internal static class ConstrainedType
         string fieldName,
         Func<string, T?> ctor,
         int maxLen,
-        string str)
+        string? str)
     {
         if (string.IsNullOrEmpty(str))
         {
@@ -299,7 +300,7 @@ partial class String50
     /// Return error if length > maxLen
     /// Return Some if the input is valid
     /// </summary>
-    public static Result<String50?, string> CreateOption(string fieldName, string str) =>
+    public static Result<String50?, string> CreateOption(string fieldName, string? str) =>
         ConstrainedType.CreateStringOption(fieldName, x => new String50(x), 50, str);
 }
 
@@ -385,6 +386,11 @@ partial class ProductCode
 
 partial class ProductCode
 {
+    public string PrimitiveValue =>
+        this is WidgetCode w ? w.Value :
+        this is GizmoCode g ? g.Value :
+        string.Empty;
+
     /// <summary>
     /// Create an ProductCode from a string
     /// Return Error if input is null, empty, or not matching pattern
@@ -444,13 +450,19 @@ partial class OrderQuantity
 partial class OrderQuantity
 {
 
-    ///// Return the value inside a OrderQuantity
     //let value qty =
     //    match qty with
     //    | Unit uq ->
     //        uq |> UnitQuantity.value |> decimal
     //    | Kilogram kq ->
     //        kq |> KilogramQuantity.value
+    /// <summary>
+    /// Return the value inside a OrderQuantity
+    /// </summary>
+    public decimal PrimitiveValue =>
+        this is UnitQuantity uq ? uq.Value :
+        this is KilogramQuantity kq ? kq.Value :
+        default;
 
     /// <summary>
     /// Create a OrderQuantity from a productCode and quantity
