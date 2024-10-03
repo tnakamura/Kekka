@@ -114,7 +114,7 @@ public enum SendResult
 public delegate SendResult SendOrderAcknowledgment(
     OrderAcknowledgment orderAcknowledgment);
 
-public delegate OrderAcknowledgment? AcknowledgeOrder(
+public delegate OrderAcknowledgmentSent? AcknowledgeOrder(
     CreateOrderAcknowledgmentLetter createOrderAcknowledgmentLetter,  // dependency
     SendOrderAcknowledgment sendOrderAcknowledgment,      // dependency
     PricedOrder pricedOrder);                  // input
@@ -312,25 +312,31 @@ public static class PriceOrderStep
 // AcknowledgeOrder step
 // ---------------------------
 
-let acknowledgeOrder : AcknowledgeOrder =
-    fun createAcknowledgmentLetter sendAcknowledgment pricedOrder ->
-        let letter = createAcknowledgmentLetter pricedOrder
-        let acknowledgment = {
-            EmailAddress = pricedOrder.CustomerInfo.EmailAddress
-            Letter = letter
-            }
+public static class AcknowledgeOrderStep
+{
+    public static readonly AcknowledgeOrder AcknowledgeOrder = new AcknowledgeOrder(
+        (createAcknowledgmentLetter, sendAcknowledgment, pricedOrder) =>
+        {
+            var letter = createAcknowledgmentLetter(pricedOrder);
+            var acknowledgment = new OrderAcknowledgment(
+                EmailAddress: pricedOrder.CustomerInfo.EmailAddress,
+                Letter: letter);
 
-        // if the acknowledgement was successfully sent,
-        // return the corresponding event, else return None
-        match sendAcknowledgment acknowledgment with
-        | Sent ->
-            let event = {
-                OrderId = pricedOrder.OrderId
-                EmailAddress = pricedOrder.CustomerInfo.EmailAddress
-                }
-            Some event
-        | NotSent ->
-            None
+            // if the acknowledgement was successfully sent,
+            // return the corresponding event, else return None
+            switch (sendAcknowledgment(acknowledgment))
+            {
+                case SendResult.Sent:
+                    return new OrderAcknowledgmentSent(
+                        OrderId: pricedOrder.OrderId,
+                        EmailAddress: pricedOrder.CustomerInfo.EmailAddress);
+                case SendResult.NotSent:
+                    return null;
+                default:
+                    return null;
+            }
+        });
+}
 
 // ---------------------------
 // Create events
