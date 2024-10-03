@@ -201,7 +201,7 @@ public static class ValidateOrderStep
 
     /// Helper function for validateOrder
     public static Result<ProductCode, ValidationError> ToProductCode(CheckProductCodeExists checkProductCodeExists, string productCode)
-    { 
+    {
         // create a ProductCode -> Result<ProductCode,...> function
         // suitable for using in a pipeline
         Result<ProductCode, ValidationError> CheckProduct(ProductCode productCode)
@@ -248,7 +248,7 @@ public static class ValidateOrderStep
         return result;
     }
 
-    public static readonly ValidateOrder ValidateOrder = new  ValidateOrder(
+    public static readonly ValidateOrder ValidateOrder = new ValidateOrder(
         (checkProductCodeExists, checkAddressExists, unvalidatedOrder) =>
         {
             var result =
@@ -278,10 +278,10 @@ public static class PriceOrderStep
     public static Result<PricedOrderLine, PricingError> ToPricedOrderLine(GetProductPrice getProductPrice, ValidatedOrderLine validatedOrderLine)
     {
         var result =
-            from qty in Price.Create(validatedOrderLine.Quantity.PrimitiveValue).MapError(x=> new PricingError(x))
+            from qty in Price.Create(validatedOrderLine.Quantity.PrimitiveValue).MapError(x => new PricingError(x))
             let p = getProductPrice(validatedOrderLine.ProductCode)
             select qty * p into linePrices
-            from linePrice in linePrices.MapError(x=>new PricingError(x))
+            from linePrice in linePrices.MapError(x => new PricingError(x))
             select new PricedOrderLine(
                 OrderLineId: validatedOrderLine.OrderLineId,
                 ProductCode: validatedOrderLine.ProductCode,
@@ -342,25 +342,42 @@ public static class AcknowledgeOrderStep
 // Create events
 // ---------------------------
 
-let createOrderPlacedEvent (placedOrder:PricedOrder) : OrderPlaced =
-    placedOrder
+public static class CreateEventsStep
+{
+    public static OrderPlaced CreateOrderPlacedEvent(PricedOrder placedOrder) =>
+        new OrderPlaced(placedOrder);
 
-let createBillingEvent (placedOrder:PricedOrder) : BillableOrderPlaced option =
-    let billingAmount = placedOrder.AmountToBill |> BillingAmount.value
-    if billingAmount > 0M then
+    public static BillableOrderPlaced? CreateBillingEvent(PricedOrder placedOrder)
+    {
+        var billingAmount = placedOrder.AmountToBill.Value;
+        if (billingAmount > 0M)
         {
-        OrderId = placedOrder.OrderId
-        BillingAddress = placedOrder.BillingAddress
-        AmountToBill = placedOrder.AmountToBill
-        } |> Some
-    else
-        None
+            return new BillableOrderPlaced(
+                OrderId: placedOrder.OrderId,
+                BillingAddress: placedOrder.BillingAddress,
+                AmountToBill: placedOrder.AmountToBill);
+        }
+        else
+        {
+            return null;
+        }
+    }
 
-/// helper to convert an Option into a List
-let listOfOption opt =
-    match opt with
-    | Some x -> [x]
-    | None -> []
+    /// <summary>
+    /// helper to convert an Option into a List
+    /// </summary>
+    public static IList<T> ListOfOption<T>(T? opt)
+    {
+        if (opt is not null)
+        {
+            return new List<T>() { opt };
+        }
+        else
+        {
+            return new List<T>();
+        }
+    }
+}
 
 let createEvents : CreateEvents =
     fun pricedOrder acknowledgmentEventOpt ->
@@ -401,11 +418,11 @@ let placeOrder
 
     fun unvalidatedOrder ->
         asyncResult {
-            let! validatedOrder =
-                validateOrder checkProductExists checkAddressExists unvalidatedOrder
-                |> AsyncResult.mapError PlaceOrderError.Validation
-            let! pricedOrder =
-                priceOrder getProductPrice validatedOrder
+    let! validatedOrder =
+        validateOrder checkProductExists checkAddressExists unvalidatedOrder
+        |> AsyncResult.mapError PlaceOrderError.Validation
+    let!pricedOrder =
+        priceOrder getProductPrice validatedOrder
                 |> AsyncResult.ofResult
                 |> AsyncResult.mapError PlaceOrderError.Pricing
             let acknowledgementOption =
