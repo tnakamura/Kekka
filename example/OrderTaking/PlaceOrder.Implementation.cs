@@ -140,9 +140,9 @@ public static class ValidateOrderStep
     public static Result<CustomerInfo, ValidationError> ToCustomerInfo(this UnvalidatedCustomerInfo unvalidatedCustomerInfo)
     {
         var result =
-            from firstName in String50.Create("FirstName", unvalidatedCustomerInfo.FirstName).MapError(x=>new ValidationError(x))
-            from lastName in String50.Create("LastName", unvalidatedCustomerInfo.LastName).MapError(x=>new ValidationError(x))
-            from emailAddress in EmailAddress.Create("EmailAddress", unvalidatedCustomerInfo.EmailAddress).MapError(x=>new ValidationError(x))
+            from firstName in String50.Create("FirstName", unvalidatedCustomerInfo.FirstName).MapError(x => new ValidationError(x))
+            from lastName in String50.Create("LastName", unvalidatedCustomerInfo.LastName).MapError(x => new ValidationError(x))
+            from emailAddress in EmailAddress.Create("EmailAddress", unvalidatedCustomerInfo.EmailAddress).MapError(x => new ValidationError(x))
             select new CustomerInfo(
                 Name: new PersonalName(
                     FirstName: firstName,
@@ -198,90 +198,75 @@ public static class ValidateOrderStep
     public static Result<OrderLineId, ValidationError> ToOrderLineId(this string orderId) =>
         OrderLineId.Create("OrderLineId", orderId).MapError(x => new ValidationError(x));
 
-}
-
-/// Helper function for validateOrder
-let toProductCode (checkProductCodeExists:CheckProductCodeExists) productCode =
-
-    // create a ProductCode -> Result<ProductCode,...> function
-    // suitable for using in a pipeline
-    let checkProduct productCode  =
-        if checkProductCodeExists productCode then
-            Ok productCode
-        else
-            let msg = sprintf "Invalid: %A" productCode
-            Error (ValidationError msg)
-
-    // assemble the pipeline
-    productCode
-    |> ProductCode.create "ProductCode"
-    |> Result.mapError ValidationError // convert creation error into ValidationError
-    |> Result.bind checkProduct
-
-/// Helper function for validateOrder
-let toOrderQuantity productCode quantity =
-    OrderQuantity.create "OrderQuantity" productCode quantity
-    |> Result.mapError ValidationError // convert creation error into ValidationError
-
-/// Helper function for validateOrder
-let toValidatedOrderLine checkProductExists (unvalidatedOrderLine:UnvalidatedOrderLine) =
-    result {
-        let! orderLineId =
-            unvalidatedOrderLine.OrderLineId
-            |> toOrderLineId
-        let! productCode =
-            unvalidatedOrderLine.ProductCode
-            |> toProductCode checkProductExists
-        let! quantity =
-            unvalidatedOrderLine.Quantity
-            |> toOrderQuantity productCode
-        let validatedOrderLine = {
-            OrderLineId = orderLineId
-            ProductCode = productCode
-            Quantity = quantity
+    /// Helper function for validateOrder
+    public static Result<ProductCode, ValidationError> ToProductCode(CheckProductCodeExists checkProductCodeExists, string productCode)
+    { 
+        // create a ProductCode -> Result<ProductCode,...> function
+        // suitable for using in a pipeline
+        Result<ProductCode, ValidationError> CheckProduct(ProductCode productCode)
+        {
+            if (checkProductCodeExists(productCode))
+            {
+                return Result.Ok<ProductCode, ValidationError>(productCode);
             }
-        return validatedOrderLine
+            else
+            {
+                return Result.Error<ProductCode, ValidationError>(
+                    new ValidationError($"Invalid: {productCode}"));
+            }
+        }
+
+        // assemble the pipeline
+        var result =
+            from c in ProductCode.Create("ProductCode", productCode).MapError(e => new ValidationError(e))
+            select CheckProduct(c) into s
+            from a in s
+            select a;
+        return result;
     }
 
-let validateOrder : ValidateOrder =
-    fun checkProductCodeExists checkAddressExists unvalidatedOrder ->
-        asyncResult {
-            let! orderId =
-                unvalidatedOrder.OrderId
-                |> toOrderId
-                |> AsyncResult.ofResult
-            let! customerInfo =
-                unvalidatedOrder.CustomerInfo
-                |> toCustomerInfo
-                |> AsyncResult.ofResult
-            let! checkedShippingAddress =
-                unvalidatedOrder.ShippingAddress
-                |> toCheckedAddress checkAddressExists
-            let! shippingAddress =
-                checkedShippingAddress
-                |> toAddress
-                |> AsyncResult.ofResult
-            let! checkedBillingAddress =
-                unvalidatedOrder.BillingAddress
-                |> toCheckedAddress checkAddressExists
-            let! billingAddress  =
-                checkedBillingAddress
-                |> toAddress
-                |> AsyncResult.ofResult
-            let! lines =
-                unvalidatedOrder.Lines
-                |> List.map (toValidatedOrderLine checkProductCodeExists)
-                |> Result.sequence // convert list of Results to a single Result
-                |> AsyncResult.ofResult
-            let validatedOrder : ValidatedOrder = {
-                OrderId  = orderId
-                CustomerInfo = customerInfo
-                ShippingAddress = shippingAddress
-                BillingAddress = billingAddress
-                Lines = lines
-            }
-            return validatedOrder
-        }
+    /// <summary>
+    /// Helper function for validateOrder
+    /// </summary>
+    public static Result<OrderQuantity, ValidationError> ToOrderQuantity(ProductCode productCode, decimal quantity) =>
+        OrderQuantity.Create("OrderQuantity", productCode, quantity)
+            .MapError(x => new ValidationError(x));
+
+    /// <summary>
+    /// Helper function for validateOrder
+    /// </summary>
+    public static Result<ValidatedOrderLine, ValidationError> ToValidatedOrderLine(
+        CheckProductCodeExists checkProductExists,
+        UnvalidatedOrderLine unvalidatedOrderLine)
+    {
+        var result =
+            from orderLineId in ToOrderLineId(unvalidatedOrderLine.OrderLineId)
+            from productCode in ToProductCode(checkProductExists, unvalidatedOrderLine.ProductCode)
+            from quantity in ToOrderQuantity(productCode, unvalidatedOrderLine.Quantity)
+            select new ValidatedOrderLine(orderLineId, productCode, quantity);
+        return result;
+    }
+
+    public static readonly ValidateOrder ValidateOrder = new  ValidateOrder(
+        (checkProductCodeExists, checkAddressExists, unvalidatedOrder) =>
+        {
+            var result =
+                from orderId in ToOrderId(unvalidatedOrder.OrderId).AsTask()
+                from customerInfo in ToCustomerInfo(unvalidatedOrder.CustomerInfo).AsTask()
+                from checkedShippingAddress in ToCheckedAddress(checkAddressExists, unvalidatedOrder.ShippingAddress)
+                from shippingAddress in ToAddress(checkedShippingAddress).AsTask()
+                from checkedBillingAddress in ToCheckedAddress(checkAddressExists, unvalidatedOrder.BillingAddress)
+                from billingAddress in ToAddress(checkedBillingAddress).AsTask()
+                from lines in unvalidatedOrder.Lines.Select(x => ToValidatedOrderLine(checkProductCodeExists, x)).Sequence().AsTask()
+                select new ValidatedOrder(
+                    OrderId: orderId,
+                    CustomerInfo: customerInfo,
+                    ShippingAddress: shippingAddress,
+                    BillingAddress: billingAddress,
+                    Lines: lines.ToList());
+            return result;
+        });
+}
 
 // ---------------------------
 // PriceOrder step

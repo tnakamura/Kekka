@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Kekka;
@@ -45,6 +47,27 @@ public static partial class ResultExtensions
 {
     public static Task<Result<TSuccess, TFailure>> AsTask<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
         Task.FromResult(result);
+
+    public static Result<IEnumerable<TSuccess>, TFailure> Sequence<TSuccess, TFailure>(this IEnumerable<Result<TSuccess, TFailure>> source)
+    {
+        var success = new List<TSuccess>();
+        foreach (var result in source)
+        {
+            if (result is OkResult<TSuccess, TFailure> ok)
+            {
+                success.Add(ok.Value);
+            }
+            else if (result is ErrorResult<TSuccess, TFailure> error)
+            {
+                return Result.Error<IEnumerable<TSuccess>, TFailure>(error.Error);
+            }
+            else
+            {
+                throw new NotSupportedException($"{source.GetType().FullName} is not supported.");
+            }
+        }
+        return Result.Ok<IEnumerable<TSuccess>, TFailure>(success);
+    }
 }
 
 static partial class ResultExtensions
