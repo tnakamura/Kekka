@@ -8,6 +8,7 @@
 	  <PackageLicenseExpression>MIT</PackageLicenseExpression>
 	  <PackageProjectUrl>https://github.com/tnakamura/Kekka</PackageProjectUrl>
 	  <RepositoryUrl>https://github.com/tnakamura/Kekka</RepositoryUrl>
+	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
   </PropertyGroup>
 
 </Project>
