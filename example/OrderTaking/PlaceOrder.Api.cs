@@ -46,7 +46,7 @@ public static class JsonSerialization
 
     public static JsonString SerializeJson<T>(T value) => new JsonString(JsonSerializer.Serialize<T>(value));
 
-    public static T? deserializeJson<T>(string str) => JsonSerializer.Deserialize<T>(str);
+    public static T? DeserializeJson<T>(JsonString str) => JsonSerializer.Deserialize<T>(str.String);
 }
 
 // =============================
@@ -92,9 +92,9 @@ public static class Workflow
 
     /// This function converts the workflow output into a HttpResponse
     public static HttpResponse WorkflowResultToHttpReponse(
-        Result<IEnumerable<PlaceOrderEvent>, PlaceOrderError> result)
+        Result<IList<PlaceOrderEvent>, PlaceOrderError> result)
     {
-        if (result is OkResult<IEnumerable<PlaceOrderEvent>, PlaceOrderError> events)
+        if (result is OkResult<IList<PlaceOrderEvent>, PlaceOrderError> events)
         {
             var dtos = events.Value.Select(x => PlaceOrderEventDto.FromDomain(x)).ToArray();
             var json = JsonSerialization.SerializeJson(dtos);
@@ -102,7 +102,7 @@ public static class Workflow
                 HttpStatusCode: 200,
                 Body: json);
         }
-        else if (result is ErrorResult<IEnumerable<PlaceOrderEvent>, PlaceOrderError> err)
+        else if (result is ErrorResult<IList<PlaceOrderEvent>, PlaceOrderError> err)
         {
             var dto = PlaceOrderErrorDto.FromDomain(err.Error);
             var json = JsonSerialization.SerializeJson(dto);
@@ -115,32 +115,31 @@ public static class Workflow
             throw new InvalidOperationException();
         }
     }
-}
 
-
-
-let placeOrderApi : PlaceOrderApi =
-    fun request ->
+    public static readonly PlaceOrderApi PlaceOrderApi = async request =>
+    {
         // following the approach in "A Complete Serialization Pipeline" in chapter 11
 
         // start with a string
-        let orderFormJson = request.Body
-        let orderForm = deserializeJson<OrderFormDto>(orderFormJson)
+        var orderFormJson = request.Body;
+        var orderForm = JsonSerialization.DeserializeJson<OrderFormDto>(orderFormJson);
         // convert to domain object
-        let unvalidatedOrder = orderForm |> OrderFormDto.toUnvalidatedOrder
+        var unvalidatedOrder = orderForm!.ToUnvalidatedOrder();
 
         // setup the dependencies. See "Injecting Dependencies" in chapter 9
-        let workflow =
-            Implementation.placeOrder
-                checkProductExists // dependency
-                checkAddressExists // dependency
-                getProductPrice    // dependency
-                createOrderAcknowledgmentLetter  // dependency
-                sendOrderAcknowledgment // dependency
+        var workflow =
+            OverallWorkflow.PlaceOrder(
+                checkProductExists, // dependency
+                checkAddressExists, // dependency
+                getProductPrice,    // dependency
+                createOrderAcknowledgmentLetter,  // dependency
+                sendOrderAcknowledgment); // dependency
 
         // now we are in the pure domain
-        let asyncResult = workflow unvalidatedOrder
+        var asyncResult = await workflow(unvalidatedOrder);
 
         // now convert from the pure domain back to a HttpResponse
-        asyncResult
-        |> Async.map(workflowResultToHttpReponse)
+        return WorkflowResultToHttpReponse(asyncResult);
+    };
+}
+
