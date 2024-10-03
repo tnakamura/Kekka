@@ -43,6 +43,24 @@ public static class Result
 
 public static partial class ResultExtensions
 {
+    public static Result<TSuccess, TFailure2> MapError<TSuccess, TFailure, TFailure2>(
+        this Result<TSuccess, TFailure> source,
+        Func<TFailure, TFailure2> selector)
+    {
+        if (source is OkResult<TSuccess, TFailure> ok)
+        {
+            return Result.Ok<TSuccess, TFailure2>(ok.Value);
+        }
+        else if (source is ErrorResult<TSuccess, TFailure> error)
+        {
+            return Result.Error<TSuccess, TFailure2>(selector(error.Error));
+        }
+        else
+        {
+            throw new NotSupportedException($"{source.GetType().FullName} is not supported.");
+        }
+    }
+
     public static Task<Result<TSuccess, TFailure>> AsTask<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
         Task.FromResult(result);
 }

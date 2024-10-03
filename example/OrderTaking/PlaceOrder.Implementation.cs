@@ -1,6 +1,7 @@
-﻿module internal OrderTaking.PlaceOrder.Implementation
+﻿using Kekka;
+using OrderTaking.Common;
 
-open OrderTaking.Common
+namespace OrderTaking.PlaceOrder.Implementation;
 
 // ======================================================
 // This file contains the final implementation for the PlaceOrder workflow
@@ -24,72 +25,78 @@ open OrderTaking.Common
 
 // Product validation
 
-type CheckProductCodeExists =
-    ProductCode -> bool
+public delegate bool CheckProductCodeExists(ProductCode productCode);
 
-// Address validation
-type AddressValidationError =
-    | InvalidFormat
-    | AddressNotFound
+/// <summary>
+/// Address validation
+/// </summary>
+public enum AddressValidationError
+{
+    InvalidFormat,
+    AddressNotFound,
+}
 
-type CheckedAddress = CheckedAddress of UnvalidatedAddress
+public record CheckedAddress(
+    string AddressLine1,
+    string? AddressLine2,
+    string? AddressLine3,
+    string? AddressLine4,
+    string City,
+    string ZipCode) : UnvalidatedAddress(
+        AddressLine1: AddressLine1,
+        AddressLine2: AddressLine2,
+        AddressLine3: AddressLine3,
+        AddressLine4: AddressLine4,
+        City: City,
+        ZipCode: ZipCode);
 
-type CheckAddressExists =
-    UnvalidatedAddress -> AsyncResult<CheckedAddress,AddressValidationError>
+public delegate Task<Result<CheckedAddress, AddressValidationError>> CheckAddressExists(UnvalidatedAddress address);
 
 // ---------------------------
 // Validated Order
 // ---------------------------
 
-type ValidatedOrderLine =  {
-    OrderLineId : OrderLineId
-    ProductCode : ProductCode
-    Quantity : OrderQuantity
-    }
+public record ValidatedOrderLine(
+    OrderLineId OrderLineId,
+    ProductCode ProductCode,
+    OrderQuantity Quantity);
 
-type ValidatedOrder = {
-    OrderId : OrderId
-    CustomerInfo : CustomerInfo
-    ShippingAddress : Address
-    BillingAddress : Address
-    Lines : ValidatedOrderLine list
-    }
+public record ValidatedOrder(
+    OrderId OrderId,
+    CustomerInfo CustomerInfo,
+    Address ShippingAddress,
+    Address BillingAddress,
+    IList<ValidatedOrderLine> Lines);
 
-type ValidateOrder =
-    CheckProductCodeExists  // dependency
-     -> CheckAddressExists  // dependency
-     -> UnvalidatedOrder    // input
-     -> AsyncResult<ValidatedOrder, ValidationError> // output
+public delegate Task<Result<ValidatedOrder, ValidationError>> ValidateOrder(
+    CheckProductCodeExists checkProductCodeExists,  // dependency
+    CheckAddressExists checkAddressExists,  // dependency
+    UnvalidatedOrder unvalidatedOrder);    // input
 
 // ---------------------------
 // Pricing step
 // ---------------------------
 
-type GetProductPrice =
-    ProductCode -> Price
+public delegate Price GetProductPrice(
+    ProductCode productCode);
 
 // priced state is defined Domain.WorkflowTypes
 
-type PriceOrder =
-    GetProductPrice     // dependency
-     -> ValidatedOrder  // input
-     -> Result<PricedOrder, PricingError>  // output
-
+public delegate Result<PricedOrder, PricingError> PriceOrder(
+    GetProductPrice getProductPrice,     // dependency
+    ValidatedOrder validatedOrder);  // input
 
 // ---------------------------
 // Send OrderAcknowledgment
 // ---------------------------
 
-type HtmlString =
-    HtmlString of string
+public record struct HtmlString(string String);
 
-type OrderAcknowledgment = {
-    EmailAddress : EmailAddress
-    Letter : HtmlString
-    }
+public record OrderAcknowledgment(
+    EmailAddress EmailAddress,
+    HtmlString Letter);
 
-type CreateOrderAcknowledgmentLetter =
-    PricedOrder -> HtmlString
+public delegate HtmlString CreateOrderAcknowledgmentLetter(PricedOrder pricedOrder);
 
 /// Send the order acknowledgement to the customer
 /// Note that this does NOT generate an Result-type error (at least not in this workflow)
@@ -97,25 +104,27 @@ type CreateOrderAcknowledgmentLetter =
 /// On success, we will generate a OrderAcknowledgmentSent event,
 /// but on failure we won't.
 
-type SendResult = Sent | NotSent
+public enum SendResult
+{
+    Sent,
+    NotSent
+}
 
-type SendOrderAcknowledgment =
-    OrderAcknowledgment -> SendResult
+public delegate SendResult SendOrderAcknowledgment(
+    OrderAcknowledgment orderAcknowledgment);
 
-type AcknowledgeOrder =
-    CreateOrderAcknowledgmentLetter  // dependency
-     -> SendOrderAcknowledgment      // dependency
-     -> PricedOrder                  // input
-     -> OrderAcknowledgmentSent option // output
+public delegate OrderAcknowledgment? AcknowledgeOrder(
+    CreateOrderAcknowledgmentLetter createOrderAcknowledgmentLetter,  // dependency
+    SendOrderAcknowledgment sendOrderAcknowledgment,      // dependency
+    PricedOrder pricedOrder);                  // input
 
 // ---------------------------
 // Create events
 // ---------------------------
 
-type CreateEvents =
-    PricedOrder                           // input
-     -> OrderAcknowledgmentSent option    // input (event from previous step)
-     -> PlaceOrderEvent list              // output
+public delegate IList<PlaceOrderEvent> CreateEvents(
+    PricedOrder pricedOrder,                           // input
+    OrderAcknowledgmentSent? orderAcknowledgmentSent);   // input (event from previous step)
 
 
 // ======================================================
@@ -126,63 +135,42 @@ type CreateEvents =
 // ValidateOrder step
 // ---------------------------
 
-let toCustomerInfo (unvalidatedCustomerInfo: UnvalidatedCustomerInfo) =
-    result {
-        let! firstName =
-            unvalidatedCustomerInfo.FirstName
-            |> String50.create "FirstName"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! lastName =
-            unvalidatedCustomerInfo.LastName
-            |> String50.create "LastName"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! emailAddress =
-            unvalidatedCustomerInfo.EmailAddress
-            |> EmailAddress.create "EmailAddress"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let customerInfo = {
-            Name = {FirstName=firstName; LastName=lastName}
-            EmailAddress = emailAddress
-            }
-        return customerInfo
+public static class ValidateOrderStep
+{
+    public static Result<CustomerInfo, ValidationError> ToCustomerInfo(this UnvalidatedCustomerInfo unvalidatedCustomerInfo)
+    {
+        var result =
+            from firstName in String50.Create("FirstName", unvalidatedCustomerInfo.FirstName).MapError(x=>new ValidationError(x))
+            from lastName in String50.Create("LastName", unvalidatedCustomerInfo.LastName).MapError(x=>new ValidationError(x))
+            from emailAddress in EmailAddress.Create("EmailAddress", unvalidatedCustomerInfo.EmailAddress).MapError(x=>new ValidationError(x))
+            select new CustomerInfo(
+                Name: new PersonalName(
+                    FirstName: firstName,
+                    LastName: lastName),
+                EmailAddress: emailAddress);
+        return result;
     }
 
-let toAddress (CheckedAddress checkedAddress) =
-    result {
-        let! addressLine1 =
-            checkedAddress.AddressLine1
-            |> String50.create "AddressLine1"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! addressLine2 =
-            checkedAddress.AddressLine2
-            |> String50.createOption "AddressLine2"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! addressLine3 =
-            checkedAddress.AddressLine3
-            |> String50.createOption "AddressLine3"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! addressLine4 =
-            checkedAddress.AddressLine4
-            |> String50.createOption "AddressLine4"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! city =
-            checkedAddress.City
-            |> String50.create "City"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let! zipCode =
-            checkedAddress.ZipCode
-            |> ZipCode.create "ZipCode"
-            |> Result.mapError ValidationError // convert creation error into ValidationError
-        let address : Address = {
-            AddressLine1 = addressLine1
-            AddressLine2 = addressLine2
-            AddressLine3 = addressLine3
-            AddressLine4 = addressLine4
-            City = city
-            ZipCode = zipCode
-            }
-        return address
+    public static Result<Address, ValidationError> ToAddress(CheckedAddress checkedAddress)
+    {
+        var result =
+            from addressLine1 in String50.Create("AddressLine1", checkedAddress.AddressLine1).MapError(x => new ValidationError(x))
+            from addressLine2 in String50.CreateOption("AddressLine2", checkedAddress.AddressLine2).MapError(x => new ValidationError(x))
+            from addressLine3 in String50.CreateOption("AddressLine3", checkedAddress.AddressLine3).MapError(x => new ValidationError(x))
+            from addressLine4 in String50.CreateOption("AddressLine4", checkedAddress.AddressLine4).MapError(x => new ValidationError(x))
+            from city in String50.Create("City", checkedAddress.City).MapError(x => new ValidationError(x))
+            from zipCode in ZipCode.Create("ZipCode", checkedAddress.ZipCode).MapError(x => new ValidationError(x))
+            select new Address(
+                AddressLine1: addressLine1,
+                AddressLine2: addressLine2,
+                AddressLine3: addressLine3,
+                AddressLine4: addressLine4,
+                City: city,
+                ZipCode: zipCode);
+        return result;
     }
+}
+
 
 /// Call the checkAddressExists and convert the error to a ValidationError
 let toCheckedAddress (checkAddress:CheckAddressExists) address =
