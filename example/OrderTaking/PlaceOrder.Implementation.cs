@@ -1,4 +1,5 @@
-﻿using Kekka;
+﻿using System.Security.Cryptography;
+using Kekka;
 using OrderTaking.Common;
 
 namespace OrderTaking.PlaceOrder.Implementation;
@@ -272,45 +273,39 @@ public static class ValidateOrderStep
 // PriceOrder step
 // ---------------------------
 
-let toPricedOrderLine (getProductPrice:GetProductPrice) (validatedOrderLine:ValidatedOrderLine) =
-    result {
-        let qty = validatedOrderLine.Quantity |> OrderQuantity.value
-        let price = validatedOrderLine.ProductCode |> getProductPrice
-        let! linePrice =
-            Price.multiply qty price
-            |> Result.mapError PricingError // convert to PlaceOrderError
-        let pricedLine : PricedOrderLine = {
-            OrderLineId = validatedOrderLine.OrderLineId
-            ProductCode = validatedOrderLine.ProductCode
-            Quantity = validatedOrderLine.Quantity
-            LinePrice = linePrice
-            }
-        return pricedLine
+public static class PriceOrderStep
+{
+    public static Result<PricedOrderLine, PricingError> ToPricedOrderLine(GetProductPrice getProductPrice, ValidatedOrderLine validatedOrderLine)
+    {
+        var result =
+            from qty in Price.Create(validatedOrderLine.Quantity.PrimitiveValue).MapError(x=> new PricingError(x))
+            let p = getProductPrice(validatedOrderLine.ProductCode)
+            select qty * p into linePrices
+            from linePrice in linePrices.MapError(x=>new PricingError(x))
+            select new PricedOrderLine(
+                OrderLineId: validatedOrderLine.OrderLineId,
+                ProductCode: validatedOrderLine.ProductCode,
+                Quantity: validatedOrderLine.Quantity,
+                LinePrice: linePrice);
+        return result;
     }
 
-
-let priceOrder : PriceOrder =
-    fun getProductPrice validatedOrder ->
-        result {
-            let! lines =
-                validatedOrder.Lines
-                |> List.map (toPricedOrderLine getProductPrice)
-                |> Result.sequence // convert list of Results to a single Result
-            let! amountToBill =
-                lines
-                |> List.map (fun line -> line.LinePrice)  // get each line price
-                |> BillingAmount.sumPrices                // add them together as a BillingAmount
-                |> Result.mapError PricingError           // convert to PlaceOrderError
-            let pricedOrder : PricedOrder = {
-                OrderId  = validatedOrder.OrderId
-                CustomerInfo = validatedOrder.CustomerInfo
-                ShippingAddress = validatedOrder.ShippingAddress
-                BillingAddress = validatedOrder.BillingAddress
-                Lines = lines
-                AmountToBill = amountToBill
-            }
-            return pricedOrder
-        }
+    public static readonly PriceOrder PriceOrder = new PriceOrder(
+        (getProductPrice, validatedOrder) =>
+        {
+            var result =
+                from lines in validatedOrder.Lines.Select(x => ToPricedOrderLine(getProductPrice, x)).Sequence()
+                from amountBill in BillingAmount.SumPrices(lines.Select(x => x.LinePrice)).MapError(x => new PricingError(x))
+                select new PricedOrder(
+                    OrderId: validatedOrder.OrderId,
+                    CustomerInfo: validatedOrder.CustomerInfo,
+                    ShippingAddress: validatedOrder.ShippingAddress,
+                    BillingAddress: validatedOrder.BillingAddress,
+                    Lines: lines.ToList(),
+                    AmountToBill: amountBill);
+            return result;
+        });
+}
 
 
 // ---------------------------
