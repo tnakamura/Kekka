@@ -273,7 +273,7 @@ internal static class ConstrainedType
             var msg = $"{fieldName} must not be null or empty";
             return Result.Error<T, string>(msg);
         }
-        else if (System.Text.RegularExpressions.Regex.IsMatch(str, pattern))
+        else if (System.Text.RegularExpressions.Regex.IsMatch(str, pattern) is false)
         {
             var msg = $"{fieldName}: '{str}' must match the pattern '{pattern}'";
             return Result.Error<T, string>(msg);
