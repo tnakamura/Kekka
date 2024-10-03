@@ -10,7 +10,7 @@ Kekka - means result in Japanese -
 
 ## Quick start
 
-```sh
+```cs
 using Kekka;
 
 var result1 = from x in Result.Ok<decimal, Exception>(2)
