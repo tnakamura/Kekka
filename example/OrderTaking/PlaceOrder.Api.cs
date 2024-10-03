@@ -1,4 +1,11 @@
-﻿module OrderTaking.PlaceOrder.Api
+﻿using OrderTaking.Common;
+using Kekka;
+using System.Linq;
+using OrderTaking.PlaceOrder;
+using OrderTaking.PlaceOrder.Implementation;
+using System.Text.Json;
+
+namespace OrderTaking.PlaceOrder.Api;
 
 // ======================================================
 // This file contains the JSON API interface to the PlaceOrder workflow
@@ -8,100 +15,109 @@
 // 3) The output is turned into a DTO which is turned into a HttpResponse
 // ======================================================
 
+public record struct JsonString(string String);
 
-open OrderTaking.Common
-open OrderTaking.PlaceOrder
-
-
-type JsonString = string
-
+/// <summary>
 /// Very simplified version!
-type HttpRequest = {
-    Action : string
-    Uri : string
-    Body : JsonString
-    }
+/// </summary>
+public record HttpRequest(
+    string Action,
+    string Uri,
+    JsonString Body);
 
+/// <summary>
 /// Very simplified version!
-type HttpResponse = {
-    HttpStatusCode : int
-    Body : JsonString
-    }
+/// </summary>
+public record HttpResponse(
+    int HttpStatusCode,
+    JsonString Body);
 
+/// <summary>
 /// An API takes a HttpRequest as input and returns a async response
-type PlaceOrderApi = HttpRequest -> Async<HttpResponse>
+/// </summary>
+public delegate Task<HttpResponse> PlaceOrderApi(HttpRequest request);
 
 
 // =============================
 // JSON serialization
 // =============================
+public static class JsonSerialization
+{
 
-open System.Text.Json
-let serializeJson = JsonSerializer.Serialize
-let deserializeJson<'a> (str:string) = JsonSerializer.Deserialize<'a>(str)
+    public static JsonString SerializeJson<T>(T value) => new JsonString(JsonSerializer.Serialize<T>(value));
+
+    public static T? deserializeJson<T>(string str) => JsonSerializer.Deserialize<T>(str);
+}
 
 // =============================
 // Implementation
 // =============================
 
-// setup dummy dependencies
+public static class Workflow
+{
+    // setup dummy dependencies
 
-let internal checkProductExists : Implementation.CheckProductCodeExists =
-    fun productCode ->
-        true // dummy implementation
+    internal static readonly Implementation.CheckProductCodeExists checkProductExists = productCode => true;
 
-let internal checkAddressExists : Implementation.CheckAddressExists =
-    fun unvalidatedAddress ->
-        let checkedAddress = Implementation.CheckedAddress unvalidatedAddress
-        AsyncResult.retn checkedAddress
+    internal static readonly Implementation.CheckAddressExists checkAddressExists =
+        unvalidatedAddress =>
+        {
+            var checkedAddress = new CheckedAddress(
+                AddressLine1: unvalidatedAddress.AddressLine1,
+                AddressLine2: unvalidatedAddress.AddressLine2,
+                AddressLine3: unvalidatedAddress.AddressLine3,
+                AddressLine4: unvalidatedAddress.AddressLine4,
+                City: unvalidatedAddress.City,
+                ZipCode: unvalidatedAddress.ZipCode);
+            return Task.FromResult(Result.Ok<CheckedAddress, AddressValidationError>(checkedAddress));
+        };
 
-let internal getProductPrice : Implementation.GetProductPrice =
-    fun productCode ->
-        Price.unsafeCreate 1M  // dummy implementation
+    internal static readonly Implementation.GetProductPrice getProductPrice =
+        productCode => Price.UnsafeCreate(1M);  // dummy implementation
+
+    internal static readonly Implementation.CreateOrderAcknowledgmentLetter createOrderAcknowledgmentLetter =
+        pricedOrder =>
+        {
+            var letterTest = new Implementation.HtmlString("some text");
+            return letterTest;
+        };
+
+    internal static readonly Implementation.SendOrderAcknowledgment sendOrderAcknowledgment =
+        orderAcknowledgement => SendResult.Sent;
 
 
-let internal createOrderAcknowledgmentLetter : Implementation.CreateOrderAcknowledgmentLetter =
-    fun pricedOrder ->
-        let letterTest = Implementation.HtmlString "some text"
-        letterTest
+    // -------------------------------
+    // workflow
+    // -------------------------------
 
-let internal sendOrderAcknowledgment : Implementation.SendOrderAcknowledgment =
-    fun orderAcknowledgement ->
-        Implementation.Sent
+    /// This function converts the workflow output into a HttpResponse
+    public static HttpResponse WorkflowResultToHttpReponse(
+        Result<IEnumerable<PlaceOrderEvent>, PlaceOrderError> result)
+    {
+        if (result is OkResult<IEnumerable<PlaceOrderEvent>, PlaceOrderError> events)
+        {
+            var dtos = events.Value.Select(x => PlaceOrderEventDto.FromDomain(x)).ToArray();
+            var json = JsonSerialization.SerializeJson(dtos);
+            return new HttpResponse(
+                HttpStatusCode: 200,
+                Body: json);
+        }
+        else if (result is ErrorResult<IEnumerable<PlaceOrderEvent>, PlaceOrderError> err)
+        {
+            var dto = PlaceOrderErrorDto.FromDomain(err.Error);
+            var json = JsonSerialization.SerializeJson(dto);
+            return new HttpResponse(
+                HttpStatusCode: 401,
+                Body: json);
+        }
+        else
+        {
+            throw new InvalidOperationException();
+        }
+    }
+}
 
 
-// -------------------------------
-// workflow
-// -------------------------------
-
-/// This function converts the workflow output into a HttpResponse
-let workflowResultToHttpReponse result =
-    match result with
-    | Ok events ->
-        // turn domain events into dtos
-        let dtos =
-            events
-            |> List.map PlaceOrderEventDto.fromDomain
-            |> List.toArray // arrays are json friendly
-        // and serialize to JSON
-        let json = serializeJson(dtos)
-        let response =
-            {
-            HttpStatusCode = 200
-            Body = json
-            }
-        response
-    | Error err ->
-        // turn domain errors into a dto
-        let dto = err |> PlaceOrderErrorDto.fromDomain
-        // and serialize to JSON
-        let json = serializeJson(dto )
-        let response =
-            {
-            HttpStatusCode = 401
-            Body = json
-            }
-        response
 
 let placeOrderApi : PlaceOrderApi =
     fun request ->
@@ -127,4 +143,4 @@ let placeOrderApi : PlaceOrderApi =
 
         // now convert from the pure domain back to a HttpResponse
         asyncResult
-        |> Async.map (workflowResultToHttpReponse)
+        |> Async.map(workflowResultToHttpReponse)

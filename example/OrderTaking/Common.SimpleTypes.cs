@@ -491,15 +491,26 @@ partial class Price
     public static Result<Price, string> Create(decimal v) =>
         ConstrainedType.CreateDecimal("Price", x => new Price(x), 0.0M, 1000M, v);
 
+    /// <summary>
     /// Create a Price from a decimal.
     /// Throw an exception if out of bounds. This should only be used if you know the value is valid.
-    //public static Result<Price, string> unsafeCreate v =
-    //    create v
-    //    |> function
-    //        | Ok price ->
-    //            price
-    //        | Error err ->
-    //            failwithf "Not expecting Price to be out of bounds: %s" err
+    /// </summary>
+    public static Price UnsafeCreate(decimal v)
+    {
+        var result = Create(v);
+        if (result is OkResult<Price, string> price)
+        {
+            return price.Value;
+        }
+        else if (result is ErrorResult<Price, string> err)
+        {
+            throw new Exception($"Not expecting Price to be out of bounds:{err}");
+        }
+        else
+        {
+            throw new NotSupportedException();
+        }
+    }
 
     /// <summary>
     /// Multiply a Price by a decimal qty.
