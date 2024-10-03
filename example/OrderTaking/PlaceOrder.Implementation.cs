@@ -377,31 +377,17 @@ public static class CreateEventsStep
             return new List<T>();
         }
     }
+
+    public static readonly CreateEvents CreateEvents = new CreateEvents(
+        (pricedOrder, acknowledgmentEventOpt) =>
+        {
+            var acknowledgmentEvents = ListOfOption<PlaceOrderEvent>(acknowledgmentEventOpt);
+            var orderPlacedEvents = ListOfOption<PlaceOrderEvent>(CreateOrderPlacedEvent(pricedOrder));
+            var billingEvents = ListOfOption<PlaceOrderEvent>(CreateBillingEvent(pricedOrder));
+            // return all the events
+            return acknowledgmentEvents.Concat(orderPlacedEvents).Concat(billingEvents).ToList();
+        });
 }
-
-let createEvents : CreateEvents =
-    fun pricedOrder acknowledgmentEventOpt ->
-        let acknowledgmentEvents =
-            acknowledgmentEventOpt
-            |> Option.map PlaceOrderEvent.AcknowledgmentSent
-            |> listOfOption
-        let orderPlacedEvents =
-            pricedOrder
-            |> createOrderPlacedEvent
-            |> PlaceOrderEvent.OrderPlaced
-            |> List.singleton
-        let billingEvents =
-            pricedOrder
-            |> createBillingEvent
-            |> Option.map PlaceOrderEvent.BillableOrderPlaced
-            |> listOfOption
-
-        // return all the events
-        [
-        yield! acknowledgmentEvents
-        yield! orderPlacedEvents
-        yield! billingEvents
-        ]
 
 
 // ---------------------------
