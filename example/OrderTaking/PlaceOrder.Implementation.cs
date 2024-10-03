@@ -169,29 +169,36 @@ public static class ValidateOrderStep
                 ZipCode: zipCode);
         return result;
     }
+
+    /// <summary>
+    /// Call the checkAddressExists and convert the error to a ValidationError
+    /// </summary>
+    public static Task<Result<CheckedAddress, ValidationError>> ToCheckedAddress(CheckAddressExists checkAddress, UnvalidatedAddress address)
+    {
+        var result =
+            from checkedAddress in checkAddress(address).MapError(addrError =>
+            {
+                return addrError switch
+                {
+                    AddressValidationError.AddressNotFound => new ValidationError("Address not found"),
+                    AddressValidationError.InvalidFormat => new ValidationError("Address has bad format"),
+                    _ => throw new NotSupportedException()
+                };
+            })
+            select checkedAddress;
+        return result;
+    }
+
+    public static Result<OrderId, ValidationError> ToOrderId(this string orderId) =>
+        OrderId.Create("OrderId", orderId).MapError(x => new ValidationError(x));
+
+    /// <summary>
+    /// Helper function for validateOrder
+    /// </summary>
+    public static Result<OrderLineId, ValidationError> ToOrderLineId(this string orderId) =>
+        OrderLineId.Create("OrderLineId", orderId).MapError(x => new ValidationError(x));
+
 }
-
-
-/// Call the checkAddressExists and convert the error to a ValidationError
-let toCheckedAddress (checkAddress:CheckAddressExists) address =
-    address
-    |> checkAddress
-    |> AsyncResult.mapError (fun addrError ->
-        match addrError with
-        | AddressNotFound -> ValidationError "Address not found"
-        | InvalidFormat -> ValidationError "Address has bad format"
-        )
-
-let toOrderId orderId =
-    orderId
-    |> OrderId.create "OrderId"
-    |> Result.mapError ValidationError // convert creation error into ValidationError
-
-/// Helper function for validateOrder
-let toOrderLineId orderId =
-    orderId
-    |> OrderLineId.create "OrderLineId"
-    |> Result.mapError ValidationError // convert creation error into ValidationError
 
 /// Helper function for validateOrder
 let toProductCode (checkProductCodeExists:CheckProductCodeExists) productCode =
