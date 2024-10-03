@@ -8,8 +8,8 @@ public class ResultTest
         var actual = from x in Result.Ok<decimal, Exception>(2)
                      from y in Result.Ok<decimal, Exception>(3)
                      select x + y;
-        Assert.IsType<OkResult<decimal, Exception>>(actual);
-        Assert.Equal(5, ((OkResult<decimal, Exception>)actual).Value);
+        Assert.IsType<Ok<decimal, Exception>>(actual);
+        Assert.Equal(5, ((Ok<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -19,8 +19,8 @@ public class ResultTest
                      from y in Result.Ok<decimal, Exception>(x)
                      from z in Result.Ok<decimal, Exception>(y)
                      select x + y + z;
-        Assert.IsType<OkResult<decimal, Exception>>(actual);
-        Assert.Equal(6, ((OkResult<decimal, Exception>)actual).Value);
+        Assert.IsType<Ok<decimal, Exception>>(actual);
+        Assert.Equal(6, ((Ok<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -29,8 +29,8 @@ public class ResultTest
         var actual = from x in Result.Ok<decimal, Exception>(2)
                      from y in Result.Error<decimal, Exception>(new ArgumentException())
                      select x + y;
-        Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
+        Assert.IsType<Error<decimal, Exception>>(actual);
+        Assert.IsType<ArgumentException>(((Error<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -40,8 +40,8 @@ public class ResultTest
                      from y in Result.Error<decimal, Exception>(new ArgumentException())
                      from z in Result.Ok<decimal, Exception>(y)
                      select x + y + z;
-        Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
+        Assert.IsType<Error<decimal, Exception>>(actual);
+        Assert.IsType<ArgumentException>(((Error<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -52,8 +52,8 @@ public class ResultTest
             from y in Task.FromResult(Result.Ok<decimal, Exception>(3))
             select x + y
         );
-        Assert.IsType<OkResult<decimal, Exception>>(actual);
-        Assert.Equal(5, ((OkResult<decimal, Exception>)actual).Value);
+        Assert.IsType<Ok<decimal, Exception>>(actual);
+        Assert.Equal(5, ((Ok<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -65,8 +65,8 @@ public class ResultTest
             from z in Task.FromResult(Result.Ok<decimal, Exception>(y))
             select x + y + z
         );
-        Assert.IsType<OkResult<decimal, Exception>>(actual);
-        Assert.Equal(6, ((OkResult<decimal, Exception>)actual).Value);
+        Assert.IsType<Ok<decimal, Exception>>(actual);
+        Assert.Equal(6, ((Ok<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -77,8 +77,8 @@ public class ResultTest
             from y in Task.FromResult(Result.Error<decimal, Exception>(new ArgumentException()))
             select x + y
         );
-        Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
+        Assert.IsType<Error<decimal, Exception>>(actual);
+        Assert.IsType<ArgumentException>(((Error<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -90,8 +90,8 @@ public class ResultTest
             from z in Task.FromResult(Result.Ok<decimal, Exception>(y))
             select x + y + z
         );
-        Assert.IsType<ErrorResult<decimal, Exception>>(actual);
-        Assert.IsType<ArgumentException>(((ErrorResult<decimal, Exception>)actual).Error);
+        Assert.IsType<Error<decimal, Exception>>(actual);
+        Assert.IsType<ArgumentException>(((Error<decimal, Exception>)actual).Value);
     }
 
     [Fact]
@@ -102,8 +102,8 @@ public class ResultTest
                        from price in GetProductPriceAsync(id)
                        select $"{id} {name} {price}‰~";
         var actual = await pipeline;
-        Assert.IsType<OkResult<string, Exception>>(actual);
-        Assert.Equal("TKNKNST ‚½‚¯‚Ì‚±‚Ì—¢ 150‰~", ((OkResult<string, Exception>)actual).Value);
+        Assert.IsType<Ok<string, Exception>>(actual);
+        Assert.Equal("TKNKNST ‚½‚¯‚Ì‚±‚Ì—¢ 150‰~", ((Ok<string, Exception>)actual).Value);
 
         Task<Result<string, Exception>> GetProductIdAsync(int code)
         {

@@ -94,7 +94,7 @@ public static class Workflow
     public static HttpResponse WorkflowResultToHttpReponse(
         Result<IList<PlaceOrderEvent>, PlaceOrderError> result)
     {
-        if (result is OkResult<IList<PlaceOrderEvent>, PlaceOrderError> events)
+        if (result is Ok<IList<PlaceOrderEvent>, PlaceOrderError> events)
         {
             var dtos = events.Value.Select(x => PlaceOrderEventDto.FromDomain(x)).ToArray();
             var json = JsonSerialization.SerializeJson(dtos);
@@ -102,9 +102,9 @@ public static class Workflow
                 HttpStatusCode: 200,
                 Body: json);
         }
-        else if (result is ErrorResult<IList<PlaceOrderEvent>, PlaceOrderError> err)
+        else if (result is Error<IList<PlaceOrderEvent>, PlaceOrderError> err)
         {
-            var dto = PlaceOrderErrorDto.FromDomain(err.Error);
+            var dto = PlaceOrderErrorDto.FromDomain(err.Value);
             var json = JsonSerialization.SerializeJson(dto);
             return new HttpResponse(
                 HttpStatusCode: 401,

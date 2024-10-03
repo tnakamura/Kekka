@@ -5,9 +5,9 @@ public abstract class Result<TSuccess, TFailure>
     private protected Result() { }
 }
 
-public sealed class OkResult<TSuccess, TFailure> : Result<TSuccess, TFailure>
+public sealed class Ok<TSuccess, TFailure> : Result<TSuccess, TFailure>
 {
-    internal OkResult(TSuccess value)
+    internal Ok(TSuccess value)
     {
         Value = value;
     }
@@ -15,25 +15,25 @@ public sealed class OkResult<TSuccess, TFailure> : Result<TSuccess, TFailure>
     public TSuccess Value { get; }
 }
 
-public sealed class ErrorResult<TSuccess, TFailure> : Result<TSuccess, TFailure>
+public sealed class Error<TSuccess, TFailure> : Result<TSuccess, TFailure>
 {
-    internal ErrorResult(TFailure error)
+    internal Error(TFailure value)
     {
-        Error = error;
+        Value = value;
     }
 
-    public TFailure Error { get; }
+    public TFailure Value { get; }
 }
 
 public static class Result
 {
     public static Result<TSuccess, TFailure> Ok<TSuccess, TFailure>(TSuccess value)
     {
-        return new OkResult<TSuccess, TFailure>(value);
+        return new Ok<TSuccess, TFailure>(value);
     }
 
     public static Result<TSuccess, TFailure> Error<TSuccess, TFailure>(TFailure error)
     {
-        return new ErrorResult<TSuccess, TFailure>(error);
+        return new Error<TSuccess, TFailure>(error);
     }
 }
