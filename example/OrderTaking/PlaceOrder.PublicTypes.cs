@@ -94,7 +94,12 @@ public record RemoteServiceError(
    ServiceInfo Service,
     System.Exception Exception) : PlaceOrderError;
 
-public record PlaceOrderError { }
+public record PlaceOrderError
+{
+    public static PlaceOrderError Validation(string Message) => new ValidationError(Message);
+
+    public static PlaceOrderError Pricing(string Message) => new PricingError(Message);
+}
 
 // ------------------------------------
 // the workflow itself
