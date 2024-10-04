@@ -1,84 +1,48 @@
-# Kekka
+# Kekka - Result Type for C#
 
-The Kekka - means result in Japanese - provides a type-safe way to handle results that can either be successful (Ok) or contain an error (Error).
-It is useful for scenarios where you need to represent the outcome of an operation without relying on exceptions or nullable types.
+Kekka - means result in Japanese - is a C# library that provides a functional-style Result type, enabling you to handle success and failure cases more elegantly in your applications. Inspired by the Railway Oriented Programming (ROP) concept, Kekka helps you structure your code in a way that keeps it clean and handles errors gracefully.
 
 ## Features
 
-- Type-safe Result abstraction: Avoids ambiguity by clearly defining success and failure cases.
-- Generic result handling: Supports both TSuccess and TFailure types to represent different data for success and failure.
-- Clear API: Provides a straightforward Ok and Error factory method to create results.
+- Functional-style `Result` type (`Ok`, `Error`)
+- Extension methods for LINQ-style composition
+- Support for asynchronous operations
+- Tools for Railway Oriented Programming (ROP)
 
 ## Installation
 
-You can install the Kekka library via NuGet:
-
-### Using .NET CLI
+You can install Kekka from NuGet:
 
 ```bash
 dotnet add package Kekka
 ```
 
-### Using Package Manager Console
-
-```bash
-Install-Package Kekka
-```
-
-Once installed, you can include the library in your project by adding the following using directive:
-
-```cs
-using Kekka;
-```
-
 ## Usage
 
-### Creating a Result
-
-You can create a result using the `Result.Ok` and `Result.Error` static methods.
-Here's an example of how to use it:
+### Basic `Result` Type Usage
 
 ```cs
 using Kekka;
 
-public class Example
-{
-    public Result<int, string> Divide(int dividend, int divisor)
-    {
-        if (divisor == 0)
-        {
-            return Result.Error<int, string>("Division by zero is not allowed.");
-        }
+var result1 = Result.Ok<int, string>(10);  // Success case
+var result2 = Result.Error<int, string>("Something went wrong");  // Error case
 
-        return Result.Ok<int, string>(dividend / divisor);
-    }
+if (result1 is Ok<int, string> ok)
+{
+    Console.WriteLine($"Success: {ok.Value}");
+}
+else if (result2 is Error<int, string> error)
+{
+    Console.WriteLine($"Failure: {error.Value}");
 }
 ```
 
-In this example:
+### Railway Oriented Programming (ROP) with LINQ
 
-- The method `Divide` returns either an `Ok` result with the division result or an `Error` result with an error message (`string`).
+Railway Oriented Programming is a concept introduced by Scott Wlaschin, designed to handle success and failure cases in a clear, chainable manner.
+In Kekka, you can use LINQ and extension methods like `SelectMany` to compose multiple operations that can succeed or fail.
 
-### Handling Results
-
-Once you have a Result object, you can safely check whether it is a success (`Ok`) or a failure (`Error`):
-
-```cs
-var result = example.Divide(10, 2);
-
-if (result is Ok<int, string> okResult)
-{
-    Console.WriteLine($"Success: {okResult.Value}");
-}
-else if (result is Error<int, string> errorResult)
-{
-    Console.WriteLine($"Error: {errorResult.Value}");
-}
-```
-
-This pattern ensures that you handle both success and failure cases explicitly, leading to more robust and predictable code.
-
-### Railway Oriented Programming
+#### Example 1: All operations succeed
 
 ```cs
 using Kekka;
@@ -87,20 +51,49 @@ var result1 = from x in Result.Ok<decimal, Exception>(2)
               from y in Result.Ok<decimal, Exception>(x)
               from z in Result.Ok<decimal, Exception>(y)
               select x + y;
+
 if (result1 is Ok<decimal, Exception> ok)
 {
-    Console.WriteLine($"result1: {ok.Value}");
+    Console.WriteLine($"result1: {ok.Value}");  // Output: result1: 4
 }
+```
+
+#### Example 2: Handling failure
+
+In the following example, one of the operations fails (`Result.Error<TSuccess, TFaulure>`), and the chain stops immediately, returning the error.
+
+```cs
+using Kekka;
 
 var result2 = from x in Result.Ok<decimal, Exception>(2)
               from y in Result.Error<decimal, Exception>(new Exception("Error!!"))
               from z in Result.Ok<decimal, Exception>(3)
               select x + y + z;
+
 if (result2 is Error<decimal, Exception> error)
 {
-    Console.WriteLine($"result2: {error.Value.Message}");
+    Console.WriteLine($"result2: {error.Value.Message}");  // Output: result2: Error!!
 }
 ```
+
+#### Asynchronous Support
+
+You can also use asynchronous results with `Task<Result<TSuccess, TFailure>>` and chain them using the provided extension methods.
+
+```cs
+using Kekka;
+using System.Threading.Tasks;
+
+var result = await from x in Task.FromResult(Result.Ok<int, string>(10))
+                   from y in Task.FromResult(Result.Ok<int, string>(x + 5))
+                   select x + y;
+
+if (result is Ok<int, string> ok)
+{
+    Console.WriteLine($"Async result: {ok.Value}");  // Output: Async result: 25
+}
+```
+
 
 ## API Reference
 
@@ -127,6 +120,15 @@ if (result2 is Error<decimal, Exception> error)
 ### `Result.Error<TSuccess, TFailure>(TFailure error)`
 
 - A static method to create a failure result with the provided error value.
+
+## Extension Methods
+
+The library provides several useful extension methods to work with `Result<TSuccess, TFailure>` types in a more functional way.
+
+- `Select` - Map over the success value.
+- `SelectMany` - Chain multiple Result instances.
+- `MapError` - Map over the failure value.
+- `ToAsyncResult` - Convert a Result to an asynchronous `Task<Result<TSuccess, TFaulure>>`.
 
 ## License
 
