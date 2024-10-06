@@ -50,11 +50,11 @@ using Kekka;
 var result1 = from x in Result.Ok<decimal, Exception>(2)
               from y in Result.Ok<decimal, Exception>(x)
               from z in Result.Ok<decimal, Exception>(y)
-              select x + y;
+              select x + y + z;
 
 if (result1 is Ok<decimal, Exception> ok)
 {
-    Console.WriteLine($"result1: {ok.Value}");  // Output: result1: 4
+    Console.WriteLine($"result1: {ok.Value}");  // Output: result1: 6
 }
 ```
 
