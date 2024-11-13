@@ -11,6 +11,8 @@
 	  <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 	  <Authors>tnakamura</Authors>
 	  <PackageTags>result</PackageTags>
+	  <Copyright>tnakamura</Copyright>
+	  <Description>Result Type for C#</Description>
   </PropertyGroup>
 
   <ItemGroup>
