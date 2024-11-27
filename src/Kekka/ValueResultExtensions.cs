@@ -1,8 +1,33 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace Kekka;
 
 public static partial class ValueResultExtensions
+{
+    public static Task<ValueResult<TSuccess, TFailure>> ToAsyncResult<TSuccess, TFailure>(this ValueResult<TSuccess, TFailure> result) =>
+        Task.FromResult(result);
+
+    public static ValueResult<IEnumerable<TSuccess>, TFailure> Sequence<TSuccess, TFailure>(this IEnumerable<ValueResult<TSuccess, TFailure>> source)
+    {
+        var success = new List<TSuccess>();
+        foreach (var result in source)
+        {
+            if (result.IsSucceeded())
+            {
+                success.Add(result.GetValue());
+            }
+            else
+            {
+                return ValueResult.Error<IEnumerable<TSuccess>, TFailure>(result.GetError());
+            }
+        }
+        return ValueResult.Ok<IEnumerable<TSuccess>, TFailure>(success);
+    }
+}
+
+static partial class ValueResultExtensions
 {
     public static bool IsSucceeded<TSuccess, TFailure>(this in ValueResult<TSuccess, TFailure> result)
     {
@@ -89,6 +114,93 @@ static partial class ValueResultExtensions
         else
         {
             return ValueResult.Error<TSuccess2, TFailure>(source.GetError());
+        }
+    }
+
+    public static ValueResult<TSuccess, TFailure2> MapError<TSuccess, TFailure1, TFailure2>(
+        this ValueResult<TSuccess, TFailure1> source,
+        Func<TFailure1, TFailure2> selector)
+    {
+        if (source.IsSucceeded())
+        {
+            return ValueResult.Ok<TSuccess, TFailure2>(source.GetValue());
+        }
+        else
+        {
+            return ValueResult.Error<TSuccess, TFailure2>(selector(source.GetError()));
+        }
+    }
+}
+
+static partial class ValueResultExtensions
+{
+    public static async Task<ValueResult<TSuccess2, TFailure>> Select<TSuccess1, TSuccess2, TFailure>(
+        this Task<ValueResult<TSuccess1, TFailure>> source,
+        Func<TSuccess1, TSuccess2> selector)
+    {
+        var result = await source;
+        if (result.IsSucceeded())
+        {
+            return ValueResult.Ok<TSuccess2, TFailure>(selector(result.GetValue()));
+        }
+        else
+        {
+            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+        }
+    }
+
+    public static async Task<ValueResult<TSuccess2, TFailure>> SelectMany<TSuccess1, TSuccess2, TFailure>(
+        this Task<ValueResult<TSuccess1, TFailure>> source,
+        Func<TSuccess1, Task<ValueResult<TSuccess2, TFailure>>> selector)
+    {
+        var result = await source;
+        if (result.IsSucceeded())
+        {
+            return await selector(result.GetValue());
+        }
+        else
+        {
+            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+        }
+    }
+
+    public static async Task<ValueResult<TSuccess2, TFailure>> SelectMany<TSuccess1, TCollection, TSuccess2, TFailure>(
+        this Task<ValueResult<TSuccess1, TFailure>> source,
+        Func<TSuccess1, Task<ValueResult<TCollection, TFailure>>> selector,
+        Func<TSuccess1, TCollection, TSuccess2> resultSelector)
+    {
+        var result = await source;
+        if (result.IsSucceeded())
+        {
+            var result2 = await selector(result.GetValue());
+            if (result2.IsSucceeded())
+            {
+                var result3 = resultSelector(result.GetValue(), result2.GetValue());
+                return ValueResult.Ok<TSuccess2, TFailure>(result3);
+            }
+            else
+            {
+                return ValueResult.Error<TSuccess2, TFailure>(result2.GetError());
+            }
+        }
+        else
+        {
+            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+        }
+    }
+
+    public static async Task<ValueResult<TSuccess, TFailure2>> MapError<TSuccess, TFailure1, TFailure2>(
+        this Task<ValueResult<TSuccess, TFailure1>> source,
+        Func<TFailure1, TFailure2> selector)
+    {
+        var result = await source;
+        if (result.IsSucceeded())
+        {
+            return ValueResult.Ok<TSuccess, TFailure2>(result.GetValue());
+        }
+        else
+        {
+            return ValueResult.Error<TSuccess, TFailure2>(selector(result.GetError()));
         }
     }
 }
