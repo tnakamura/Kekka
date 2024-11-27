@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Kekka;
 
@@ -48,6 +49,38 @@ static partial class ValueResultExtensions
             where T : IOk<TSuccess, TFailure>
         {
             return result.Value;
+        }
+    }
+
+    public static bool TryGetValue<TSuccess, TFailure>(
+        this in ValueResult<TSuccess, TFailure> result,
+        [MaybeNullWhen(false)] out TSuccess? value)
+    {
+        if (result.IsSucceeded())
+        {
+            value = result.GetValue();
+            return true;
+        }
+        else
+        {
+            value = default;
+            return false;
+        }
+    }
+    
+    public static bool TryGetError<TSuccess, TFailure>(
+        this in ValueResult<TSuccess, TFailure> result,
+        [MaybeNullWhen(false)] out TFailure? error)
+    {
+        if (result.IsSucceeded())
+        {
+            error = default;
+            return false;
+        }
+        else
+        {
+            error = result.GetError();
+            return true;
         }
     }
 

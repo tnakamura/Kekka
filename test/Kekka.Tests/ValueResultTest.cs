@@ -16,11 +16,29 @@ public class ValueResultTest
     public void OkTest2()
     {
         var actual = from x in ValueResult.Ok<decimal, Exception>(2)
-                     from y in ValueResult.Ok<decimal, Exception>(x)
-                     from z in ValueResult.Ok<decimal, Exception>(y)
-                     select x + y + z;
+            from y in ValueResult.Ok<decimal, Exception>(x)
+            from z in ValueResult.Ok<decimal, Exception>(y)
+            select x + y + z;
         Assert.True(actual.IsSucceeded());
         Assert.Equal(expected: 6, actual: actual.GetValue());
+    }
+    
+    [Fact]
+    public void TryGetValueTest()
+    {
+        var actual = from x in ValueResult.Ok<decimal, Exception>(2)
+            from y in ValueResult.Ok<decimal, Exception>(x)
+            from z in ValueResult.Ok<decimal, Exception>(y)
+            select x + y + z;
+
+        if (actual.TryGetValue(out var value))
+        {
+            Assert.Equal(expected: 6, actual: value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
@@ -42,6 +60,23 @@ public class ValueResultTest
                      select x + y + z;
         Assert.False(actual.IsSucceeded());
         Assert.IsType<ArgumentException>(actual.GetError());
+    }
+
+    [Fact]
+    public void TryGetErrorTest()
+    {
+        var actual = from x in ValueResult.Ok<decimal, Exception>(2)
+                     from y in ValueResult.Error<decimal, Exception>(new ArgumentException())
+                     from z in ValueResult.Ok<decimal, Exception>(y)
+                     select x + y + z;
+        if (actual.TryGetError(out var error))
+        {
+            Assert.IsType<ArgumentException>(error);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
