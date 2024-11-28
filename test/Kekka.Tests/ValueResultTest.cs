@@ -3,28 +3,26 @@
 public class ValueResultTest
 {
     [Fact]
-    public void OkTest()
+    public void IsOkTest()
     {
         var actual = from x in ValueResult.Ok<decimal, Exception>(2)
                      from y in ValueResult.Ok<decimal, Exception>(3)
                      select x + y;
-        Assert.True(actual.IsSucceeded());
-        Assert.Equal(expected: 5, actual: actual.GetValue());
+        Assert.True(actual.IsOk);
     }
 
     [Fact]
-    public void OkTest2()
+    public void IsOkTest2()
     {
         var actual = from x in ValueResult.Ok<decimal, Exception>(2)
                      from y in ValueResult.Ok<decimal, Exception>(x)
                      from z in ValueResult.Ok<decimal, Exception>(y)
                      select x + y + z;
-        Assert.True(actual.IsSucceeded());
-        Assert.Equal(expected: 6, actual: actual.GetValue());
+        Assert.True(actual.IsOk);
     }
 
     [Fact]
-    public void TryGetValueTest()
+    public void TryGetValueTest_Ok()
     {
         var actual = from x in ValueResult.Ok<string, Exception>("A")
                      from y in ValueResult.Ok<string, Exception>(x)
@@ -43,28 +41,19 @@ public class ValueResultTest
     }
 
     [Fact]
-    public void ErrorTest()
+    public void TryGetValueTest_Error()
     {
-        var actual = from x in ValueResult.Ok<decimal, Exception>(2)
-                     from y in ValueResult.Error<decimal, Exception>(new ArgumentException())
-                     select x + y;
-        Assert.False(actual.IsSucceeded());
-        Assert.IsType<ArgumentException>(actual.GetError());
-    }
-
-    [Fact]
-    public void ErrorTest2()
-    {
-        var actual = from x in ValueResult.Ok<decimal, Exception>(2)
-                     from y in ValueResult.Error<decimal, Exception>(new ArgumentException())
-                     from z in ValueResult.Ok<decimal, Exception>(y)
+        var actual = from x in ValueResult.Ok<string, Exception>("A")
+                     from y in ValueResult.Error<string, Exception>(new ArgumentException())
+                     from z in ValueResult.Ok<string, Exception>(y)
                      select x + y + z;
-        Assert.False(actual.IsSucceeded());
-        Assert.IsType<ArgumentException>(actual.GetError());
+
+        Assert.False(actual.TryGetValue(out var value));
+        Assert.Null(value);
     }
 
     [Fact]
-    public void TryGetErrorTest()
+    public void TryGetErrorTest_Error()
     {
         var actual = from x in ValueResult.Ok<decimal, Exception>(2)
                      from y in ValueResult.Error<decimal, Exception>(new ArgumentException())
@@ -78,6 +67,17 @@ public class ValueResultTest
         {
             Assert.Fail();
         }
+    }
+
+    [Fact]
+    public void TryGetErrorTest_Ok()
+    {
+        var actual = from x in ValueResult.Ok<decimal, Exception>(2)
+                     from y in ValueResult.Ok<decimal, Exception>(x)
+                     from z in ValueResult.Ok<decimal, Exception>(y)
+                     select x + y + z;
+        Assert.False(actual.TryGetError(out var error));
+        Assert.Null(error);
     }
 
     [Fact]
@@ -118,19 +118,18 @@ public class ValueResultTest
     }
 
     [Fact]
-    public async Task AsyncOkTest()
+    public async Task IsOkTest_AsyncOk()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
             from y in Task.FromResult(ValueResult.Ok<decimal, Exception>(3))
             select x + y
         );
-        Assert.True(actual.IsSucceeded());
-        Assert.Equal(5, actual.GetValue());
+        Assert.True(actual.IsOk);
     }
 
     [Fact]
-    public async Task AsyncOkTest2()
+    public async Task TryGetValueTest_AsyncOk()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
@@ -138,33 +137,32 @@ public class ValueResultTest
             from z in Task.FromResult(ValueResult.Ok<decimal, Exception>(y))
             select x + y + z
         );
-        Assert.True(actual.IsSucceeded());
-        Assert.Equal(6, actual.GetValue());
+        if (actual.TryGetValue(out var value))
+        {
+            Assert.Equal(expected: 6, actual: value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
-    public async Task AsyncErrorTest()
+    public async Task TryGetErrorTest_AsyncError()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
             from y in Task.FromResult(ValueResult.Error<decimal, Exception>(new ArgumentException()))
             select x + y
         );
-        Assert.False(actual.IsSucceeded());
-        Assert.IsType<ArgumentException>(actual.GetError());
-    }
-
-    [Fact]
-    public async Task AsyncErrorTest2()
-    {
-        var actual = await (
-            from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
-            from y in Task.FromResult(ValueResult.Error<decimal, Exception>(new ArgumentException()))
-            from z in Task.FromResult(ValueResult.Ok<decimal, Exception>(y))
-            select x + y + z
-        );
-        Assert.False(actual.IsSucceeded());
-        Assert.IsType<ArgumentException>(actual.GetError());
+        if (actual.TryGetError(out var error))
+        {
+            Assert.IsType<ArgumentException>(error);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
@@ -175,8 +173,14 @@ public class ValueResultTest
                        from price in GetProductPriceAsync(id)
                        select $"{id} {name} {price}円";
         var actual = await pipeline;
-        Assert.True(actual.IsSucceeded());
-        Assert.Equal("TKNKNST たけのこの里 150円", actual.GetValue());
+        if (actual.TryGetValue(out var value))
+        {
+            Assert.Equal("TKNKNST たけのこの里 150円", value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
 
         Task<ValueResult<string, Exception>> GetProductIdAsync(int code)
         {

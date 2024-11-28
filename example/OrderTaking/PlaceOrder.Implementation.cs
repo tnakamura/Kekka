@@ -252,13 +252,13 @@ public static class ValidateOrderStep
         (checkProductCodeExists, checkAddressExists, unvalidatedOrder) =>
         {
             var result =
-                from orderId in ToOrderId(unvalidatedOrder.OrderId).ToAsyncResult()
-                from customerInfo in ToCustomerInfo(unvalidatedOrder.CustomerInfo).ToAsyncResult()
+                from orderId in ToOrderId(unvalidatedOrder.OrderId).AsTask()
+                from customerInfo in ToCustomerInfo(unvalidatedOrder.CustomerInfo).AsTask()
                 from checkedShippingAddress in ToCheckedAddress(checkAddressExists, unvalidatedOrder.ShippingAddress)
-                from shippingAddress in ToAddress(checkedShippingAddress).ToAsyncResult()
+                from shippingAddress in ToAddress(checkedShippingAddress).AsTask()
                 from checkedBillingAddress in ToCheckedAddress(checkAddressExists, unvalidatedOrder.BillingAddress)
-                from billingAddress in ToAddress(checkedBillingAddress).ToAsyncResult()
-                from lines in unvalidatedOrder.Lines.Select(x => ToValidatedOrderLine(checkProductCodeExists, x)).Sequence().ToAsyncResult()
+                from billingAddress in ToAddress(checkedBillingAddress).AsTask()
+                from lines in unvalidatedOrder.Lines.Select(x => ToValidatedOrderLine(checkProductCodeExists, x)).Sequence().AsTask()
                 select new ValidatedOrder(
                     OrderId: orderId,
                     CustomerInfo: customerInfo,
@@ -411,7 +411,7 @@ public static class OverallWorkflow
                 from validatedOrder in ValidateOrderStep.ValidateOrder(checkProductExists, checkAddressExists, unvalidatedOrder)
                     .MapError(x => PlaceOrderError.Validation(x.Message))
                 from pricedOrder in PriceOrderStep.PriceOrder(getProductPrice, validatedOrder)
-                    .ToAsyncResult()
+                    .AsTask()
                     .MapError(x => PlaceOrderError.Pricing(x.Message))
                 let acknowledgementOption = AcknowledgeOrderStep.AcknowledgeOrder(createOrderAcknowledgmentLetter, sendOrderAcknowledgment, pricedOrder)
                 let events = CreateEventsStep.CreateEvents(pricedOrder, acknowledgementOption)

@@ -1,117 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Kekka;
 
 public static partial class ValueResultExtensions
 {
-    public static Task<ValueResult<TSuccess, TFailure>> ToAsyncResult<TSuccess, TFailure>(this ValueResult<TSuccess, TFailure> result) =>
+    public static Task<ValueResult<TSuccess, TFailure>> AsTask<TSuccess, TFailure>(this ValueResult<TSuccess, TFailure> result) =>
         Task.FromResult(result);
+
+    public static ValueTask<ValueResult<TSuccess, TFailure>> AsValueTask<TSuccess, TFailure>(this ValueResult<TSuccess, TFailure> result) =>
+        new ValueTask<ValueResult<TSuccess, TFailure>>(result);
 
     public static ValueResult<IEnumerable<TSuccess>, TFailure> Sequence<TSuccess, TFailure>(this IEnumerable<ValueResult<TSuccess, TFailure>> source)
     {
         var success = new List<TSuccess>();
         foreach (var result in source)
         {
-            if (result.IsSucceeded())
+            if (result.TryGet(out var value, out var error))
             {
-                success.Add(result.GetValue());
+                success.Add(value);
             }
             else
             {
-                return ValueResult.Error<IEnumerable<TSuccess>, TFailure>(result.GetError());
+                return ValueResult.Error<IEnumerable<TSuccess>, TFailure>(error);
             }
         }
         return ValueResult.Ok<IEnumerable<TSuccess>, TFailure>(success);
-    }
-}
-
-static partial class ValueResultExtensions
-{
-    public static bool IsSucceeded<TSuccess, TFailure>(this in ValueResult<TSuccess, TFailure> result)
-    {
-        return IsSucceededCore(result);
-
-        static bool IsSucceededCore<T>(in T result)
-            where T : IResult<TSuccess, TFailure>
-        {
-            return result.IsSucceeded;
-        }
-    }
-
-    public static TSuccess GetValue<TSuccess, TFailure>(this in ValueResult<TSuccess, TFailure> result)
-    {
-        return GetValueCore(result);
-
-        static TSuccess GetValueCore<T>(in T result)
-            where T : IOk<TSuccess, TFailure>
-        {
-            return result.Value;
-        }
-    }
-
-    public static bool TryGetValue<TSuccess, TFailure>(
-        this in ValueResult<TSuccess, TFailure> result,
-        [MaybeNullWhen(false)] out TSuccess value)
-    {
-        if (result.IsSucceeded())
-        {
-            value = result.GetValue();
-            return true;
-        }
-        else
-        {
-            value = default;
-            return false;
-        }
-    }
-
-    public static bool TryGetError<TSuccess, TFailure>(
-        this in ValueResult<TSuccess, TFailure> result,
-        [MaybeNullWhen(false)] out TFailure error)
-    {
-        if (result.IsSucceeded())
-        {
-            error = default;
-            return false;
-        }
-        else
-        {
-            error = result.GetError();
-            return true;
-        }
-    }
-
-    public static bool TryGet<TSuccess, TFailure>(
-        this in ValueResult<TSuccess, TFailure> result,
-        [MaybeNullWhen(false)] out TSuccess value,
-        [MaybeNullWhen(true)] out TFailure error)
-    {
-        if (result.IsSucceeded())
-        {
-            value = result.GetValue();
-            error = default;
-            return true;
-        }
-        else
-        {
-            value = default;
-            error = result.GetError();
-            return false;
-        }
-    }
-
-    public static TFailure GetError<TSuccess, TFailure>(this in ValueResult<TSuccess, TFailure> result)
-    {
-        return GetErrorCore(result);
-
-        static TFailure GetErrorCore<T>(in T result)
-            where T : IError<TSuccess, TFailure>
-        {
-            return result.Error;
-        }
     }
 }
 
@@ -121,13 +36,13 @@ static partial class ValueResultExtensions
         this in ValueResult<TSuccess1, TFailure> source,
         Func<TSuccess1, TSuccess2> selector)
     {
-        if (source.IsSucceeded())
+        if (source.TryGet(out var value, out var error))
         {
-            return ValueResult.Ok<TSuccess2, TFailure>(selector(source.GetValue()));
+            return ValueResult.Ok<TSuccess2, TFailure>(selector(value));
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(source.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error);
         }
     }
 
@@ -135,13 +50,13 @@ static partial class ValueResultExtensions
         this in ValueResult<TSuccess1, TFailure> source,
         Func<TSuccess1, ValueResult<TSuccess2, TFailure>> selector)
     {
-        if (source.IsSucceeded())
+        if (source.TryGet(out var value, out var error))
         {
-            return selector(source.GetValue());
+            return selector(value);
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(source.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error);
         }
     }
 
@@ -150,22 +65,22 @@ static partial class ValueResultExtensions
         Func<TSuccess1, ValueResult<TCollection, TFailure>> selector,
         Func<TSuccess1, TCollection, TSuccess2> resultSelector)
     {
-        if (source.IsSucceeded())
+        if (source.TryGet(out var value1, out var error1))
         {
-            var result = selector(source.GetValue());
-            if (result.IsSucceeded())
+            var result1 = selector(value1);
+            if (result1.TryGet(out var value2, out var error2))
             {
-                var result2 = resultSelector(source.GetValue(), result.GetValue());
+                var result2 = resultSelector(value1, value2);
                 return ValueResult.Ok<TSuccess2, TFailure>(result2);
             }
             else
             {
-                return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+                return ValueResult.Error<TSuccess2, TFailure>(error2);
             }
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(source.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error1);
         }
     }
 
@@ -173,13 +88,13 @@ static partial class ValueResultExtensions
         this ValueResult<TSuccess, TFailure1> source,
         Func<TFailure1, TFailure2> selector)
     {
-        if (source.IsSucceeded())
+        if (source.TryGet(out var value, out var error))
         {
-            return ValueResult.Ok<TSuccess, TFailure2>(source.GetValue());
+            return ValueResult.Ok<TSuccess, TFailure2>(value);
         }
         else
         {
-            return ValueResult.Error<TSuccess, TFailure2>(selector(source.GetError()));
+            return ValueResult.Error<TSuccess, TFailure2>(selector(error));
         }
     }
 }
@@ -191,13 +106,13 @@ static partial class ValueResultExtensions
         Func<TSuccess1, TSuccess2> selector)
     {
         var result = await source;
-        if (result.IsSucceeded())
+        if (result.TryGet(out var value, out var error))
         {
-            return ValueResult.Ok<TSuccess2, TFailure>(selector(result.GetValue()));
+            return ValueResult.Ok<TSuccess2, TFailure>(selector(value));
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error);
         }
     }
 
@@ -206,13 +121,13 @@ static partial class ValueResultExtensions
         Func<TSuccess1, Task<ValueResult<TSuccess2, TFailure>>> selector)
     {
         var result = await source;
-        if (result.IsSucceeded())
+        if (result.TryGet(out var value, out var error))
         {
-            return await selector(result.GetValue());
+            return await selector(value);
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error);
         }
     }
 
@@ -221,23 +136,23 @@ static partial class ValueResultExtensions
         Func<TSuccess1, Task<ValueResult<TCollection, TFailure>>> selector,
         Func<TSuccess1, TCollection, TSuccess2> resultSelector)
     {
-        var result = await source;
-        if (result.IsSucceeded())
+        var result1 = await source;
+        if (result1.TryGet(out var value1, out var error1))
         {
-            var result2 = await selector(result.GetValue());
-            if (result2.IsSucceeded())
+            var result2 = await selector(value1);
+            if (result2.TryGet(out var value2, out var error2))
             {
-                var result3 = resultSelector(result.GetValue(), result2.GetValue());
+                var result3 = resultSelector(value1, value2);
                 return ValueResult.Ok<TSuccess2, TFailure>(result3);
             }
             else
             {
-                return ValueResult.Error<TSuccess2, TFailure>(result2.GetError());
+                return ValueResult.Error<TSuccess2, TFailure>(error2);
             }
         }
         else
         {
-            return ValueResult.Error<TSuccess2, TFailure>(result.GetError());
+            return ValueResult.Error<TSuccess2, TFailure>(error1);
         }
     }
 
@@ -246,13 +161,13 @@ static partial class ValueResultExtensions
         Func<TFailure1, TFailure2> selector)
     {
         var result = await source;
-        if (result.IsSucceeded())
+        if (result.TryGet(out var value, out var error))
         {
-            return ValueResult.Ok<TSuccess, TFailure2>(result.GetValue());
+            return ValueResult.Ok<TSuccess, TFailure2>(value);
         }
         else
         {
-            return ValueResult.Error<TSuccess, TFailure2>(selector(result.GetError()));
+            return ValueResult.Error<TSuccess, TFailure2>(selector(error));
         }
     }
 }

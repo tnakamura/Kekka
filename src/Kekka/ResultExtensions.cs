@@ -6,8 +6,11 @@ namespace Kekka;
 
 public static partial class ResultExtensions
 {
-    public static Task<Result<TSuccess, TFailure>> ToAsyncResult<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
+    public static Task<Result<TSuccess, TFailure>> AsTask<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
         Task.FromResult(result);
+
+    public static ValueTask<Result<TSuccess, TFailure>> AsValueTask<TSuccess, TFailure>(this Result<TSuccess, TFailure> result) =>
+        new ValueTask<Result<TSuccess, TFailure>>(result);
 
     public static Result<IEnumerable<TSuccess>, TFailure> Sequence<TSuccess, TFailure>(this IEnumerable<Result<TSuccess, TFailure>> source)
     {

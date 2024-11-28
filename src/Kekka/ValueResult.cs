@@ -1,21 +1,6 @@
-﻿using System;
+﻿using System.Diagnostics.CodeAnalysis;
 
 namespace Kekka;
-
-public interface IResult<TSuccess, TFailure>
-{
-    bool IsSucceeded { get; }
-}
-
-public interface IOk<TSuccess, TFailure> : IResult<TSuccess, TFailure>
-{
-    TSuccess Value { get; }
-}
-
-public interface IError<TSuccess, TFailure> : IResult<TSuccess, TFailure>
-{
-    TFailure Error { get; }
-}
 
 public readonly struct ValueResult
 {
@@ -30,31 +15,74 @@ public readonly struct ValueResult
     }
 }
 
-public readonly struct ValueResult<TSuccess, TFailure> :
-    IOk<TSuccess, TFailure>, IError<TSuccess, TFailure>
+public readonly struct ValueResult<TSuccess, TFailure>
 {
+    private readonly bool _isOk;
+
+    private readonly TSuccess? _value;
+
+    private readonly TFailure? _error;
+
     public ValueResult(TSuccess value)
     {
         _value = value;
-        _isSucceeded = true;
+        _isOk = true;
     }
 
     public ValueResult(TFailure error)
     {
         _error = error;
-        _isSucceeded = false;
+        _isOk = false;
     }
 
-    private readonly bool _isSucceeded;
+    public bool IsOk => _isOk;
 
-    bool IResult<TSuccess, TFailure>.IsSucceeded => _isSucceeded;
+    public bool TryGetValue(
+        [NotNullWhen(true)] out TSuccess? value)
+    {
+        if (_isOk)
+        {
+            value = _value!;
+            return true;
+        }
+        else
+        {
+            value = default;
+            return false;
+        }
+    }
 
-    private readonly TSuccess? _value;
+    public bool TryGetError(
+        [NotNullWhen(true)] out TFailure? error)
+    {
+        if (_isOk)
+        {
+            error = default;
+            return false;
+        }
+        else
+        {
+            error = _error!;
+            return true;
+        }
+    }
 
-    TSuccess IOk<TSuccess, TFailure>.Value => _value ?? throw new InvalidOperationException();
-
-    private readonly TFailure? _error;
-
-    TFailure IError<TSuccess, TFailure>.Error => _error ?? throw new InvalidOperationException();
+    public bool TryGet(
+        [NotNullWhen(true)] out TSuccess? value,
+        [NotNullWhen(false)] out TFailure? error)
+    {
+        if (_isOk)
+        {
+            value = _value!;
+            error = default;
+            return true;
+        }
+        else
+        {
+            value = default;
+            error = _error!;
+            return false;
+        }
+    }
 }
 
