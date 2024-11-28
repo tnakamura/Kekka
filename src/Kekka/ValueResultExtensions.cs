@@ -54,7 +54,7 @@ static partial class ValueResultExtensions
 
     public static bool TryGetValue<TSuccess, TFailure>(
         this in ValueResult<TSuccess, TFailure> result,
-        [MaybeNullWhen(false)] out TSuccess? value)
+        [MaybeNullWhen(false)] out TSuccess value)
     {
         if (result.IsSucceeded())
         {
@@ -67,10 +67,10 @@ static partial class ValueResultExtensions
             return false;
         }
     }
-    
+
     public static bool TryGetError<TSuccess, TFailure>(
         this in ValueResult<TSuccess, TFailure> result,
-        [MaybeNullWhen(false)] out TFailure? error)
+        [MaybeNullWhen(false)] out TFailure error)
     {
         if (result.IsSucceeded())
         {
@@ -81,6 +81,25 @@ static partial class ValueResultExtensions
         {
             error = result.GetError();
             return true;
+        }
+    }
+
+    public static bool TryGet<TSuccess, TFailure>(
+        this in ValueResult<TSuccess, TFailure> result,
+        [MaybeNullWhen(false)] out TSuccess value,
+        [MaybeNullWhen(true)] out TFailure error)
+    {
+        if (result.IsSucceeded())
+        {
+            value = result.GetValue();
+            error = default;
+            return true;
+        }
+        else
+        {
+            value = default;
+            error = result.GetError();
+            return false;
         }
     }
 
