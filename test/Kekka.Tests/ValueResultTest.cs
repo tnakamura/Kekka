@@ -118,7 +118,7 @@ public class ValueResultTest
     }
 
     [Fact]
-    public async Task IsOkTest_AsyncOk()
+    public async Task IsOkTest_TaskOk()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
@@ -129,7 +129,7 @@ public class ValueResultTest
     }
 
     [Fact]
-    public async Task TryGetValueTest_AsyncOk()
+    public async Task TryGetValueTest_TaskOk()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
@@ -148,7 +148,7 @@ public class ValueResultTest
     }
 
     [Fact]
-    public async Task TryGetErrorTest_AsyncError()
+    public async Task TryGetErrorTest_TaskError()
     {
         var actual = await (
             from x in Task.FromResult(ValueResult.Ok<decimal, Exception>(2))
@@ -166,7 +166,55 @@ public class ValueResultTest
     }
 
     [Fact]
-    public async Task RailwayTest()
+    public async Task IsOkTest_ValueTaskOk()
+    {
+        var actual = await (
+            from x in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(2))
+            from y in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(3))
+            select x + y
+        );
+        Assert.True(actual.IsOk);
+    }
+
+    [Fact]
+    public async Task TryGetValueTest_ValueTaskOk()
+    {
+        var actual = await (
+            from x in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(2))
+            from y in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(x))
+            from z in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(y))
+            select x + y + z
+        );
+        if (actual.TryGetValue(out var value))
+        {
+            Assert.Equal(expected: 6, actual: value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
+    }
+
+    [Fact]
+    public async Task TryGetErrorTest_ValueTaskError()
+    {
+        var actual = await (
+            from x in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(2))
+            from y in new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Error<decimal, Exception>(new ArgumentException()))
+            select x + y
+        );
+        if (actual.TryGetError(out var error))
+        {
+            Assert.IsType<ArgumentException>(error);
+        }
+        else
+        {
+            Assert.Fail();
+        }
+    }
+
+    [Fact]
+    public async Task RailwayTest_Task()
     {
         var pipeline = from id in GetProductIdAsync(10)
                        from name in GetProductNameAsync(id)
@@ -195,6 +243,39 @@ public class ValueResultTest
         Task<ValueResult<string, Exception>> GetProductNameAsync(string productId)
         {
             return Task.FromResult(ValueResult.Ok<string, Exception>("たけのこの里"));
+        }
+    }
+
+    [Fact]
+    public async Task RailwayTest_ValueTask()
+    {
+        var pipeline = from id in GetProductIdAsync(10)
+                       from name in GetProductNameAsync(id)
+                       from price in GetProductPriceAsync(id)
+                       select $"{id} {name} {price}円";
+        var actual = await pipeline;
+        if (actual.TryGetValue(out var value))
+        {
+            Assert.Equal("TKNKNST たけのこの里 150円", value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
+
+        ValueTask<ValueResult<string, Exception>> GetProductIdAsync(int code)
+        {
+            return new ValueTask<ValueResult<string, Exception>>(ValueResult.Ok<string, Exception>("TKNKNST"));
+        }
+
+        ValueTask<ValueResult<decimal, Exception>> GetProductPriceAsync(string productId)
+        {
+            return new ValueTask<ValueResult<decimal, Exception>>(ValueResult.Ok<decimal, Exception>(150m));
+        }
+
+        ValueTask<ValueResult<string, Exception>> GetProductNameAsync(string productId)
+        {
+            return new ValueTask<ValueResult<string, Exception>>(ValueResult.Ok<string, Exception>("たけのこの里"));
         }
     }
 }

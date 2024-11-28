@@ -217,3 +217,97 @@ static partial class ResultExtensions
     }
 }
 
+static partial class ResultExtensions
+{
+    public static async ValueTask<Result<TSuccess2, TFailure>> Select<TSuccess1, TSuccess2, TFailure>(
+        this ValueTask<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, TSuccess2> selector)
+    {
+        var result = await source;
+        if (result is Ok<TSuccess1, TFailure> ok)
+        {
+            return Result.Ok<TSuccess2, TFailure>(selector(ok.Value));
+        }
+        else if (result is Error<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+
+    public static async ValueTask<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TSuccess2, TFailure>(
+        this ValueTask<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, ValueTask<Result<TSuccess2, TFailure>>> selector)
+    {
+        var result = await source;
+        if (result is Ok<TSuccess1, TFailure> ok)
+        {
+            return await selector(ok.Value);
+        }
+        else if (result is Error<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+
+    public static async ValueTask<Result<TSuccess2, TFailure>> SelectMany<TSuccess1, TCollection, TSuccess2, TFailure>(
+        this ValueTask<Result<TSuccess1, TFailure>> source,
+        Func<TSuccess1, ValueTask<Result<TCollection, TFailure>>> selector,
+        Func<TSuccess1, TCollection, TSuccess2> resultSelector)
+    {
+        var result = await source;
+        if (result is Ok<TSuccess1, TFailure> ok)
+        {
+            var result2 = await selector(ok.Value);
+            if (result2 is Ok<TCollection, TFailure> ok2)
+            {
+                var result3 = resultSelector(ok.Value, ok2.Value);
+                return Result.Ok<TSuccess2, TFailure>(result3);
+            }
+            else if (result2 is Error<TCollection, TFailure> error2)
+            {
+                return Result.Error<TSuccess2, TFailure>(error2.Value);
+            }
+            else
+            {
+                throw new NotSupportedException($"{result2.GetType().FullName} is not supported.");
+            }
+        }
+        else if (result is Error<TSuccess1, TFailure> error)
+        {
+            return Result.Error<TSuccess2, TFailure>(error.Value);
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+
+    public static async ValueTask<Result<TSuccess, TFailure2>> MapError<TSuccess, TFailure1, TFailure2>(
+        this ValueTask<Result<TSuccess, TFailure1>> source,
+        Func<TFailure1, TFailure2> selector)
+    {
+        var result = await source;
+        if (result is Ok<TSuccess, TFailure1> ok)
+        {
+            return Result.Ok<TSuccess, TFailure2>(ok.Value);
+        }
+        else if (result is Error<TSuccess, TFailure1> error)
+        {
+            return Result.Error<TSuccess, TFailure2>(selector(error.Value));
+        }
+        else
+        {
+            throw new NotSupportedException($"{result.GetType().FullName} is not supported.");
+        }
+    }
+}
+
+
