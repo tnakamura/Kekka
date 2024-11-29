@@ -4,7 +4,20 @@ using System.Threading.Tasks;
 
 namespace Kekka;
 
-public static partial class ResultExtensions
+public static partial class Result
+{
+    public static Result<T, TError> Ok<T, TError>(T value)
+    {
+        return new Result<T, TError>(value);
+    }
+
+    public static Result<T, TError> Error<T, TError>(TError error)
+    {
+        return new Result<T, TError>(error);
+    }
+}
+
+static partial class Result
 {
     public static Task<Result<T, TError>> AsTask<T, TError>(this in Result<T, TError> result) =>
         Task.FromResult(result);
@@ -23,14 +36,14 @@ public static partial class ResultExtensions
             }
             else
             {
-                return Result.Error<IEnumerable<T>, TError>(error);
+                return Error<IEnumerable<T>, TError>(error);
             }
         }
-        return Result.Ok<IEnumerable<T>, TError>(success);
+        return Ok<IEnumerable<T>, TError>(success);
     }
 }
 
-static partial class ResultExtensions
+static partial class Result
 {
     public static Result<T2, TError> Select<T1, T2, TError>(
         this in Result<T1, TError> source,
@@ -38,11 +51,11 @@ static partial class ResultExtensions
     {
         if (source.TryGet(out var value, out var error))
         {
-            return Result.Ok<T2, TError>(selector(value));
+            return Ok<T2, TError>(selector(value));
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -56,7 +69,7 @@ static partial class ResultExtensions
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -71,16 +84,16 @@ static partial class ResultExtensions
             if (result1.TryGet(out var value2, out var error2))
             {
                 var result2 = resultSelector(value1, value2);
-                return Result.Ok<T2, TError>(result2);
+                return Ok<T2, TError>(result2);
             }
             else
             {
-                return Result.Error<T2, TError>(error2);
+                return Error<T2, TError>(error2);
             }
         }
         else
         {
-            return Result.Error<T2, TError>(error1);
+            return Error<T2, TError>(error1);
         }
     }
 
@@ -90,16 +103,16 @@ static partial class ResultExtensions
     {
         if (source.TryGet(out var value, out var error))
         {
-            return Result.Ok<T, TError2>(value);
+            return Ok<T, TError2>(value);
         }
         else
         {
-            return Result.Error<T, TError2>(selector(error));
+            return Error<T, TError2>(selector(error));
         }
     }
 }
 
-static partial class ResultExtensions
+static partial class Result
 {
     public static async Task<Result<T2, TError>> Select<T1, T2, TError>(
         this Task<Result<T1, TError>> source,
@@ -108,11 +121,11 @@ static partial class ResultExtensions
         var result = await source;
         if (result.TryGet(out var value, out var error))
         {
-            return Result.Ok<T2, TError>(selector(value));
+            return Ok<T2, TError>(selector(value));
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -127,7 +140,7 @@ static partial class ResultExtensions
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -143,16 +156,16 @@ static partial class ResultExtensions
             if (result2.TryGet(out var value2, out var error2))
             {
                 var result3 = resultSelector(value1, value2);
-                return Result.Ok<T2, TError>(result3);
+                return Ok<T2, TError>(result3);
             }
             else
             {
-                return Result.Error<T2, TError>(error2);
+                return Error<T2, TError>(error2);
             }
         }
         else
         {
-            return Result.Error<T2, TError>(error1);
+            return Error<T2, TError>(error1);
         }
     }
 
@@ -163,16 +176,16 @@ static partial class ResultExtensions
         var result = await source;
         if (result.TryGet(out var value, out var error))
         {
-            return Result.Ok<T, TError2>(value);
+            return Ok<T, TError2>(value);
         }
         else
         {
-            return Result.Error<T, TError2>(selector(error));
+            return Error<T, TError2>(selector(error));
         }
     }
 }
 
-static partial class ResultExtensions
+static partial class Result
 {
     public static async ValueTask<Result<T2, TError>> Select<T1, T2, TError>(
         this ValueTask<Result<T1, TError>> source,
@@ -181,11 +194,11 @@ static partial class ResultExtensions
         var result = await source;
         if (result.TryGet(out var value, out var error))
         {
-            return Result.Ok<T2, TError>(selector(value));
+            return Ok<T2, TError>(selector(value));
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -200,7 +213,7 @@ static partial class ResultExtensions
         }
         else
         {
-            return Result.Error<T2, TError>(error);
+            return Error<T2, TError>(error);
         }
     }
 
@@ -216,16 +229,16 @@ static partial class ResultExtensions
             if (result2.TryGet(out var value2, out var error2))
             {
                 var result3 = resultSelector(value1, value2);
-                return Result.Ok<T2, TError>(result3);
+                return Ok<T2, TError>(result3);
             }
             else
             {
-                return Result.Error<T2, TError>(error2);
+                return Error<T2, TError>(error2);
             }
         }
         else
         {
-            return Result.Error<T2, TError>(error1);
+            return Error<T2, TError>(error1);
         }
     }
 
@@ -236,11 +249,11 @@ static partial class ResultExtensions
         var result = await source;
         if (result.TryGet(out var value, out var error))
         {
-            return Result.Ok<T, TError2>(value);
+            return Ok<T, TError2>(value);
         }
         else
         {
-            return Result.Error<T, TError2>(selector(error));
+            return Error<T, TError2>(selector(error));
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Kekka;
 
-public readonly struct Result<T, TError>
+public readonly struct Result<T, TError> 
 {
     private readonly bool _isOk;
 
@@ -70,19 +70,6 @@ public readonly struct Result<T, TError>
             error = _error!;
             return false;
         }
-    }
-}
-
-public static partial class Result
-{
-    public static Result<T, TError> Ok<T, TError>(T value)
-    {
-        return new Result<T, TError>(value);
-    }
-
-    public static Result<T, TError> Error<T, TError>(TError error)
-    {
-        return new Result<T, TError>(error);
     }
 }
 
