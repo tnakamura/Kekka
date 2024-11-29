@@ -4,7 +4,7 @@ Kekka - means result in Japanese - is a C# library that provides a functional-st
 
 ## Features
 
-- Functional-style `Result` type (`Ok`, `Error`)
+- Functional-style `Result` type
 - Extension methods for LINQ-style composition
 - Support for asynchronous operations
 - Tools for Railway Oriented Programming (ROP)
@@ -27,13 +27,13 @@ using Kekka;
 var result1 = Result.Ok<int, string>(10);  // Success case
 var result2 = Result.Error<int, string>("Something went wrong");  // Error case
 
-if (result1 is Ok<int, string> ok)
+if (result1.TryGetValue(out var value))
 {
-    Console.WriteLine($"Success: {ok.Value}");
+    Console.WriteLine($"Success: {value}");
 }
-else if (result2 is Error<int, string> error)
+if (result2.TryGetError(out var error))
 {
-    Console.WriteLine($"Failure: {error.Value}");
+    Console.WriteLine($"Failure: {error}");
 }
 ```
 
@@ -52,15 +52,15 @@ var result1 = from x in Result.Ok<decimal, Exception>(2)
               from z in Result.Ok<decimal, Exception>(y)
               select x + y + z;
 
-if (result1 is Ok<decimal, Exception> ok)
+if (result1.TryGetValue(out var value))
 {
-    Console.WriteLine($"result1: {ok.Value}");  // Output: result1: 6
+    Console.WriteLine($"result1: {value}");  // Output: result1: 6
 }
 ```
 
 #### Example 2: Handling failure
 
-In the following example, one of the operations fails (`Result.Error<TSuccess, TFaulure>`), and the chain stops immediately, returning the error.
+In the following example, one of the operations fails (`Result.Error<T, TError>`), and the chain stops immediately, returning the error.
 
 ```cs
 using Kekka;
@@ -70,15 +70,15 @@ var result2 = from x in Result.Ok<decimal, Exception>(2)
               from z in Result.Ok<decimal, Exception>(3)
               select x + y + z;
 
-if (result2 is Error<decimal, Exception> error)
+if (result2.TryGetError(out var error))
 {
-    Console.WriteLine($"result2: {error.Value.Message}");  // Output: result2: Error!!
+    Console.WriteLine($"result2: {error.Message}");  // Output: result2: Error!!
 }
 ```
 
 #### Asynchronous Support
 
-You can also use asynchronous results with `Task<Result<TSuccess, TFailure>>` and chain them using the provided extension methods.
+You can also use asynchronous results with `Task<Result<T, TError>>` and chain them using the provided extension methods.
 
 ```cs
 using Kekka;
@@ -88,48 +88,13 @@ var result = await from x in Task.FromResult(Result.Ok<int, string>(10))
                    from y in Task.FromResult(Result.Ok<int, string>(x + 5))
                    select x + y;
 
-if (result is Ok<int, string> ok)
+if (result.TryGetValue(out var value))
 {
-    Console.WriteLine($"Async result: {ok.Value}");  // Output: Async result: 25
+    Console.WriteLine($"Async result: {value}");  // Output: Async result: 25
 }
 ```
-
-
-## API Reference
-
-### `Result<TSuccess, TFailure>`
-
-- The base abstract class representing a result that can either be a success or a failure.
-
-### `Ok<TSuccess, TFailure>`
-
-- A sealed class representing a successful result.
-- **Property**:
-    - `TSuccess Value`: The success value.
-
-### `Error<TSuccess, TFailure>`
-
-- A sealed class representing a failure result.
-- **Property**:
-    - `TFailure Value`: The failure value.
-
-### `Result.Ok<TSuccess, TFailure>(TSuccess value)`
-
-- A static method to create a successful result with the provided success value.
-
-### `Result.Error<TSuccess, TFailure>(TFailure error)`
-
-- A static method to create a failure result with the provided error value.
-
-## Extension Methods
-
-The library provides several useful extension methods to work with `Result<TSuccess, TFailure>` types in a more functional way.
-
-- `Select` - Map over the success value.
-- `SelectMany` - Chain multiple Result instances.
-- `MapError` - Map over the failure value.
-- `ToAsyncResult` - Convert a Result to an asynchronous `Task<Result<TSuccess, TFaulure>>`.
 
 ## License
 
 This project is licensed under the [MIT License](https://opensource.org/license/MIT) - see the LICENSE file for details.
+
