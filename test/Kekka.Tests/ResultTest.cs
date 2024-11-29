@@ -3,22 +3,22 @@
 public class ResultTest
 {
     [Fact]
-    public void IsOkTest()
+    public void PatternMatchTest_Ok()
     {
-        var actual = from x in Result.Ok<decimal, Exception>(2)
-                     from y in Result.Ok<decimal, Exception>(3)
-                     select x + y;
-        Assert.True(actual.IsOk);
-    }
-
-    [Fact]
-    public void IsOkTest2()
-    {
-        var actual = from x in Result.Ok<decimal, Exception>(2)
-                     from y in Result.Ok<decimal, Exception>(x)
-                     from z in Result.Ok<decimal, Exception>(y)
+        var actual = from x in Result.Ok<string, Exception>("A")
+                     from y in Result.Ok<string, Exception>(x)
+                     from z in Result.Ok<string, Exception>(y)
                      select x + y + z;
-        Assert.True(actual.IsOk);
+
+        if (actual is { Value: { } value })
+        {
+            Assert.Equal(3, value.Length);
+            Assert.Equal(expected: "AAA", actual: value);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
@@ -50,6 +50,23 @@ public class ResultTest
 
         Assert.False(actual.TryGetValue(out var value));
         Assert.Null(value);
+    }
+
+    [Fact]
+    public void PatternMatchTest_Error()
+    {
+        var actual = from x in Result.Ok<decimal, Exception>(2)
+                     from y in Result.Error<decimal, Exception>(new ArgumentException())
+                     from z in Result.Ok<decimal, Exception>(y)
+                     select x + y + z;
+        if (actual is { Error: { } error })
+        {
+            Assert.IsType<ArgumentException>(error);
+        }
+        else
+        {
+            Assert.Fail();
+        }
     }
 
     [Fact]
@@ -118,17 +135,6 @@ public class ResultTest
     }
 
     [Fact]
-    public async Task IsOkTest_TaskOk()
-    {
-        var actual = await (
-            from x in Task.FromResult(Result.Ok<decimal, Exception>(2))
-            from y in Task.FromResult(Result.Ok<decimal, Exception>(3))
-            select x + y
-        );
-        Assert.True(actual.IsOk);
-    }
-
-    [Fact]
     public async Task TryGetValueTest_TaskOk()
     {
         var actual = await (
@@ -163,17 +169,6 @@ public class ResultTest
         {
             Assert.Fail();
         }
-    }
-
-    [Fact]
-    public async Task IsOkTest_ValueTaskOk()
-    {
-        var actual = await (
-            from x in new ValueTask<Result<decimal, Exception>>(Result.Ok<decimal, Exception>(2))
-            from y in new ValueTask<Result<decimal, Exception>>(Result.Ok<decimal, Exception>(3))
-            select x + y
-        );
-        Assert.True(actual.IsOk);
     }
 
     [Fact]

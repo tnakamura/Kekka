@@ -2,9 +2,10 @@
 
 namespace Kekka;
 
-public readonly struct Result<T, TError> 
+public readonly struct Result<T, TError> : IResult<T, TError, Result<T, TError>>
+    where TError : notnull
 {
-    private readonly bool _isOk;
+    private readonly bool _hasValue;
 
     private readonly T? _value;
 
@@ -13,21 +14,25 @@ public readonly struct Result<T, TError>
     public Result(T value)
     {
         _value = value;
-        _isOk = true;
+        _hasValue = true;
     }
 
     public Result(TError error)
     {
         _error = error;
-        _isOk = false;
+        _hasValue = false;
     }
 
-    public bool IsOk => _isOk;
+    public TError? Error => _error;
+
+    public bool HasValue => _hasValue;
+
+    public T? Value => _value;
 
     public bool TryGetValue(
         [NotNullWhen(true)] out T? value)
     {
-        if (_isOk)
+        if (_hasValue)
         {
             value = _value!;
             return true;
@@ -42,7 +47,7 @@ public readonly struct Result<T, TError>
     public bool TryGetError(
         [NotNullWhen(true)] out TError? error)
     {
-        if (_isOk)
+        if (_hasValue)
         {
             error = default;
             return false;
@@ -58,7 +63,7 @@ public readonly struct Result<T, TError>
         [NotNullWhen(true)] out T? value,
         [NotNullWhen(false)] out TError? error)
     {
-        if (_isOk)
+        if (_hasValue)
         {
             value = _value!;
             error = default;
