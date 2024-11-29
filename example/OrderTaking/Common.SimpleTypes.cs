@@ -498,17 +498,13 @@ partial class Price
     public static Price UnsafeCreate(decimal v)
     {
         var result = Create(v);
-        if (result is Ok<Price, string> price)
+        if (result.TryGet(out var price, out var err))
         {
-            return price.Value;
-        }
-        else if (result is Error<Price, string> err)
-        {
-            throw new Exception($"Not expecting Price to be out of bounds:{err}");
+            return price;
         }
         else
         {
-            throw new NotSupportedException();
+            throw new Exception($"Not expecting Price to be out of bounds:{err}");
         }
     }
 

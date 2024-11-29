@@ -1,94 +1,88 @@
-﻿namespace Kekka;
+﻿using System.Diagnostics.CodeAnalysis;
 
-/// <summary>
-/// Represents the result of an operation,
-/// which can either be a success (<see cref="Ok{TSuccess, TFailure}"/>)
-/// or a failure (<see cref="Error{TSuccess, TFailure}"/>).
-/// </summary>
-/// <typeparam name="TSuccess">The type of the value returned in case of a successful result.</typeparam>
-/// <typeparam name="TFailure">The type of the error returned in case of a failed result.</typeparam>
-public abstract class Result<TSuccess, TFailure>
-{
-    /// <summary>
-    /// Protected constructor to prevent external instantiation.
-    /// Use <see cref="Result.Ok{TSuccess, TFailure}(TSuccess)"/> or
-    /// <see cref="Result.Error{TSuccess, TFailure}(TFailure)"/> to create instances.
-    /// </summary>
-    private protected Result() { }
-}
+namespace Kekka;
 
-/// <summary>
-/// Represents a successful result of an operation.
-/// </summary>
-/// <typeparam name="TSuccess">The type of the success value.</typeparam>
-/// <typeparam name="TFailure">The type of the error value (not used in this case).</typeparam>
-public sealed class Ok<TSuccess, TFailure> : Result<TSuccess, TFailure>
+public readonly struct Result<T, TError>
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Ok{TSuccess, TFailure}"/>
-    /// class with the specified success value.
-    /// </summary>
-    /// <param name="value">The value representing the success result.</param>
-    internal Ok(TSuccess value)
+    private readonly bool _isOk;
+
+    private readonly T? _value;
+
+    private readonly TError? _error;
+
+    public Result(T value)
     {
-        Value = value;
+        _value = value;
+        _isOk = true;
     }
 
-    /// <summary>
-    /// Gets the success value of the result.
-    /// </summary>
-    public TSuccess Value { get; }
+    public Result(TError error)
+    {
+        _error = error;
+        _isOk = false;
+    }
+
+    public bool IsOk => _isOk;
+
+    public bool TryGetValue(
+        [NotNullWhen(true)] out T? value)
+    {
+        if (_isOk)
+        {
+            value = _value!;
+            return true;
+        }
+        else
+        {
+            value = default;
+            return false;
+        }
+    }
+
+    public bool TryGetError(
+        [NotNullWhen(true)] out TError? error)
+    {
+        if (_isOk)
+        {
+            error = default;
+            return false;
+        }
+        else
+        {
+            error = _error!;
+            return true;
+        }
+    }
+
+    public bool TryGet(
+        [NotNullWhen(true)] out T? value,
+        [NotNullWhen(false)] out TError? error)
+    {
+        if (_isOk)
+        {
+            value = _value!;
+            error = default;
+            return true;
+        }
+        else
+        {
+            value = default;
+            error = _error!;
+            return false;
+        }
+    }
 }
 
-/// <summary>
-/// Represents a failed result of an operation.
-/// </summary>
-/// <typeparam name="TSuccess">The type of the success value (not used in this case).</typeparam>
-/// <typeparam name="TFailure">The type of the error value.</typeparam>
-public sealed class Error<TSuccess, TFailure> : Result<TSuccess, TFailure>
+public static partial class Result
 {
-    /// <summary>
-    /// Initializes a new instance of the <see cref="Error{TSuccess, TFailure}"/>
-    /// class with the specified error value.
-    /// </summary>
-    /// <param name="value">The value representing the error result.</param>
-    internal Error(TFailure value)
+    public static Result<T, TError> Ok<T, TError>(T value)
     {
-        Value = value;
+        return new Result<T, TError>(value);
     }
 
-    /// <summary>
-    /// Gets the error value of the result.
-    /// </summary>
-    public TFailure Value { get; }
-}
-
-/// <summary>
-/// Provides static methods to create <see cref="Result{TSuccess, TFailure}"/> instances.
-/// </summary>
-public static class Result
-{
-    /// <summary>
-    /// Creates a new successful result with the specified value.
-    /// </summary>
-    /// <typeparam name="TSuccess">The type of the success value.</typeparam>
-    /// <typeparam name="TFailure">The type of the error value.</typeparam>
-    /// <param name="value">The value representing the success result.</param>
-    /// <returns>An <see cref="Ok{TSuccess, TFailure}"/> representing the successful result.</returns>
-    public static Result<TSuccess, TFailure> Ok<TSuccess, TFailure>(TSuccess value)
+    public static Result<T, TError> Error<T, TError>(TError error)
     {
-        return new Ok<TSuccess, TFailure>(value);
-    }
-
-    /// <summary>
-    /// Creates a new failed result with the specified error value.
-    /// </summary>
-    /// <typeparam name="TSuccess">The type of the success value.</typeparam>
-    /// <typeparam name="TFailure">The type of the error value.</typeparam>
-    /// <param name="error">The value representing the error result.</param>
-    /// <returns>An <see cref="Error{TSuccess, TFailure}"/> representing the failed result.</returns>
-    public static Result<TSuccess, TFailure> Error<TSuccess, TFailure>(TFailure error)
-    {
-        return new Error<TSuccess, TFailure>(error);
+        return new Result<T, TError>(error);
     }
 }
+

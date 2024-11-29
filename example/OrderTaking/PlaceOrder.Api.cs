@@ -94,25 +94,21 @@ public static class Workflow
     public static HttpResponse WorkflowResultToHttpReponse(
         Result<IList<PlaceOrderEvent>, PlaceOrderError> result)
     {
-        if (result is Ok<IList<PlaceOrderEvent>, PlaceOrderError> events)
+        if (result.TryGet(out var events, out var err))
         {
-            var dtos = events.Value.Select(x => PlaceOrderEventDto.FromDomain(x)).ToArray();
+            var dtos = events.Select(x => PlaceOrderEventDto.FromDomain(x)).ToArray();
             var json = JsonSerialization.SerializeJson(dtos);
             return new HttpResponse(
                 HttpStatusCode: 200,
                 Body: json);
         }
-        else if (result is Error<IList<PlaceOrderEvent>, PlaceOrderError> err)
+        else
         {
-            var dto = PlaceOrderErrorDto.FromDomain(err.Value);
+            var dto = PlaceOrderErrorDto.FromDomain(err);
             var json = JsonSerialization.SerializeJson(dto);
             return new HttpResponse(
                 HttpStatusCode: 401,
                 Body: json);
-        }
-        else
-        {
-            throw new InvalidOperationException();
         }
     }
 
