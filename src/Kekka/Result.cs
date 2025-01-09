@@ -2,7 +2,7 @@
 
 namespace Kekka;
 
-public readonly struct Result<T, TError> : IResult<T, TError, Result<T, TError>>
+public readonly struct Result<T, TError>
     where TError : notnull
 {
     private readonly bool _hasValue;

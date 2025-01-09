@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace Kekka;
 
-public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>, IOptional<T, Optional<T>>
+public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
     where T : notnull
 {
     private readonly bool _hasValue;
