@@ -1,5 +1,4 @@
-﻿using System.Security.Cryptography;
-using Kekka;
+﻿using Kekka;
 using OrderTaking.Common;
 
 namespace OrderTaking.PlaceOrder.Implementation;
@@ -39,9 +38,9 @@ public enum AddressValidationError
 
 public record CheckedAddress(
     string AddressLine1,
-    string? AddressLine2,
-    string? AddressLine3,
-    string? AddressLine4,
+    Optional<string> AddressLine2,
+    Optional<string> AddressLine3,
+    Optional<string> AddressLine4,
     string City,
     string ZipCode) : UnvalidatedAddress(
         AddressLine1: AddressLine1,
@@ -114,7 +113,7 @@ public enum SendResult
 public delegate SendResult SendOrderAcknowledgment(
     OrderAcknowledgment orderAcknowledgment);
 
-public delegate OrderAcknowledgmentSent? AcknowledgeOrder(
+public delegate Optional<PlaceOrderEvent> AcknowledgeOrder(
     CreateOrderAcknowledgmentLetter createOrderAcknowledgmentLetter,  // dependency
     SendOrderAcknowledgment sendOrderAcknowledgment,      // dependency
     PricedOrder pricedOrder);                  // input
@@ -125,7 +124,7 @@ public delegate OrderAcknowledgmentSent? AcknowledgeOrder(
 
 public delegate IList<PlaceOrderEvent> CreateEvents(
     PricedOrder pricedOrder,                           // input
-    OrderAcknowledgmentSent? orderAcknowledgmentSent);   // input (event from previous step)
+    Optional<PlaceOrderEvent> orderAcknowledgmentSent);   // input (event from previous step)
 
 
 // ======================================================
@@ -327,13 +326,14 @@ public static class AcknowledgeOrderStep
             switch (sendAcknowledgment(acknowledgment))
             {
                 case SendResult.Sent:
-                    return new OrderAcknowledgmentSent(
-                        OrderId: pricedOrder.OrderId,
-                        EmailAddress: pricedOrder.CustomerInfo.EmailAddress);
+                    return new Optional<PlaceOrderEvent>(
+                        new OrderAcknowledgmentSent(
+                            OrderId: pricedOrder.OrderId,
+                            EmailAddress: pricedOrder.CustomerInfo.EmailAddress));
                 case SendResult.NotSent:
-                    return null;
+                    return Optional<PlaceOrderEvent>.None;
                 default:
-                    return null;
+                    return Optional<PlaceOrderEvent>.None;
             }
         });
 }
@@ -344,33 +344,35 @@ public static class AcknowledgeOrderStep
 
 public static class CreateEventsStep
 {
-    public static OrderPlaced CreateOrderPlacedEvent(PricedOrder placedOrder) =>
-        new OrderPlaced(placedOrder);
+    public static Optional<PlaceOrderEvent> CreateOrderPlacedEvent(PricedOrder placedOrder) =>
+        new Optional<PlaceOrderEvent>(new OrderPlaced(placedOrder));
 
-    public static BillableOrderPlaced? CreateBillingEvent(PricedOrder placedOrder)
+    public static Optional<PlaceOrderEvent> CreateBillingEvent(PricedOrder placedOrder)
     {
         var billingAmount = placedOrder.AmountToBill.Value;
         if (billingAmount > 0M)
         {
-            return new BillableOrderPlaced(
-                OrderId: placedOrder.OrderId,
-                BillingAddress: placedOrder.BillingAddress,
-                AmountToBill: placedOrder.AmountToBill);
+            return new Optional<PlaceOrderEvent>(
+                new BillableOrderPlaced(
+                    OrderId: placedOrder.OrderId,
+                    BillingAddress: placedOrder.BillingAddress,
+                    AmountToBill: placedOrder.AmountToBill));
         }
         else
         {
-            return null;
+            return Optional<PlaceOrderEvent>.None;
         }
     }
 
     /// <summary>
     /// helper to convert an Option into a List
     /// </summary>
-    public static IList<T> ListOfOption<T>(T? opt)
+    public static IList<T> ListOfOption<T>(Optional<T> opt)
+        where T : notnull
     {
-        if (opt is not null)
+        if (opt.TryGet(out var value))
         {
-            return new List<T>() { opt };
+            return new List<T>() { value };
         }
         else
         {
@@ -381,7 +383,7 @@ public static class CreateEventsStep
     public static readonly CreateEvents CreateEvents = new CreateEvents(
         (pricedOrder, acknowledgmentEventOpt) =>
         {
-            var acknowledgmentEvents = ListOfOption<PlaceOrderEvent>(acknowledgmentEventOpt);
+            var acknowledgmentEvents = ListOfOption(acknowledgmentEventOpt);
             var orderPlacedEvents = ListOfOption<PlaceOrderEvent>(CreateOrderPlacedEvent(pricedOrder));
             var billingEvents = ListOfOption<PlaceOrderEvent>(CreateBillingEvent(pricedOrder));
             // return all the events

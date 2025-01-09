@@ -20,9 +20,9 @@ public record UnvalidatedCustomerInfo(
 
 public record UnvalidatedAddress(
     string AddressLine1,
-    string? AddressLine2,
-    string? AddressLine3,
-    string? AddressLine4,
+    Optional<string> AddressLine2,
+    Optional<string> AddressLine3,
+    Optional<string> AddressLine4,
     string City,
     string ZipCode);
 

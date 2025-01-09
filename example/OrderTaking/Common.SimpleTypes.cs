@@ -1,5 +1,4 @@
-﻿using System.Runtime.CompilerServices;
-using Kekka;
+﻿using Kekka;
 
 namespace OrderTaking.Common;
 
@@ -183,24 +182,32 @@ internal static class ConstrainedType
     /// Return error if length > maxLen
     /// Return Some if the input is valid
     /// </summary>
-    public static Result<T?, string> CreateStringOption<T>(
+    public static Result<Optional<T>, string> CreateStringOption<T>(
         string fieldName,
-        Func<string, T?> ctor,
+        Func<string, Optional<T>> ctor,
         int maxLen,
-        string? str)
+        Optional<string> str)
+        where T : notnull
     {
-        if (string.IsNullOrEmpty(str))
+        if (str.TryGet(out var value))
         {
-            return Result.Ok<T?, string>(default);
-        }
-        else if (str.Length > maxLen)
-        {
-            var msg = $"{fieldName} must not be more than {maxLen} chars";
-            return Result.Error<T?, string>(msg);
+            if (string.IsNullOrEmpty(value))
+            {
+                return Result.Ok<Optional<T>, string>(Optional<T>.None);
+            }
+            else if (value.Length > maxLen)
+            {
+                var msg = $"{fieldName} must not be more than {maxLen} chars";
+                return Result.Error<Optional<T>, string>(msg);
+            }
+            else
+            {
+                return Result.Ok<Optional<T>, string>(ctor(value));
+            }
         }
         else
         {
-            return Result.Ok<T?, string>(ctor(str));
+            return Result.Ok<Optional<T>, string>(Optional<T>.None);
         }
     }
 
@@ -300,8 +307,8 @@ partial class String50
     /// Return error if length > maxLen
     /// Return Some if the input is valid
     /// </summary>
-    public static Result<String50?, string> CreateOption(string fieldName, string? str) =>
-        ConstrainedType.CreateStringOption(fieldName, x => new String50(x), 50, str);
+    public static Result<Optional<String50>, string> CreateOption(string fieldName, Optional<string> str) =>
+        ConstrainedType.CreateStringOption(fieldName, x => new Optional<String50>(new String50(x)), 50, str);
 }
 
 partial class EmailAddress

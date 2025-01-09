@@ -1,4 +1,5 @@
-﻿namespace OrderTaking.Common;
+﻿using Kekka;
+namespace OrderTaking.Common;
 
 public record PersonalName(
     String50 FirstName,
@@ -10,9 +11,9 @@ public record CustomerInfo(
 
 public record Address(
     String50 AddressLine1,
-    String50? AddressLine2,
-    String50? AddressLine3,
-    String50? AddressLine4,
+    Optional<String50> AddressLine2,
+    Optional<String50> AddressLine3,
+    Optional<String50> AddressLine4,
     String50 City,
     ZipCode ZipCode);
 

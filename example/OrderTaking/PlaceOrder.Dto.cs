@@ -101,9 +101,9 @@ internal static class CustomerInfoDtoExtensions
 
 public record AddressDto(
     string AddressLine1,
-    string? AddressLine2,
-    string? AddressLine3,
-    string? AddressLine4,
+    Optional<string> AddressLine2,
+    Optional<string> AddressLine3,
+    Optional<string> AddressLine4,
     string City,
     string ZipCode)
 {
@@ -116,9 +116,9 @@ public record AddressDto(
         // this is a simple 1:1 copy
         return new(
             AddressLine1: domainObj.AddressLine1.Value,
-            AddressLine2: domainObj.AddressLine2?.Value ?? null,
-            AddressLine3: domainObj.AddressLine3?.Value ?? null,
-            AddressLine4: domainObj.AddressLine4?.Value ?? null,
+            AddressLine2: domainObj.AddressLine2.Select(x => x.Value),
+            AddressLine3: domainObj.AddressLine3.Select(x => x.Value),
+            AddressLine4: domainObj.AddressLine4.Select(x => x.Value),
             City: domainObj.City.Value,
             ZipCode: domainObj.ZipCode.Value);
     }
