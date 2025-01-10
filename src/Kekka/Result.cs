@@ -11,13 +11,13 @@ public readonly struct Result<T, TError>
 
     private readonly TError? _error;
 
-    public Result(T value)
+    internal Result(T value)
     {
         _value = value;
         _hasValue = true;
     }
 
-    public Result(TError error)
+    internal Result(TError error)
     {
         _error = error;
         _hasValue = false;

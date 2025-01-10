@@ -129,7 +129,7 @@ static partial class Result
         Func<T1, T2> selector)
         where TError : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
             return Ok<T2, TError>(selector(value));
@@ -145,10 +145,10 @@ static partial class Result
         Func<T1, Task<Result<T2, TError>>> selector)
         where TError : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
-            return await selector(value);
+            return await selector(value).ConfigureAwait(false);
         }
         else
         {
@@ -162,10 +162,10 @@ static partial class Result
         Func<T1, TCollection, T2> resultSelector)
         where TError : notnull
     {
-        var result1 = await source;
+        var result1 = await source.ConfigureAwait(false);
         if (result1.TryGet(out var value1, out var error1))
         {
-            var result2 = await selector(value1);
+            var result2 = await selector(value1).ConfigureAwait(false);
             if (result2.TryGet(out var value2, out var error2))
             {
                 var result3 = resultSelector(value1, value2);
@@ -188,7 +188,7 @@ static partial class Result
         where TError1 : notnull
         where TError2 : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
             return Ok<T, TError2>(value);
@@ -207,7 +207,7 @@ static partial class Result
         Func<T1, T2> selector)
         where TError : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
             return Ok<T2, TError>(selector(value));
@@ -223,10 +223,10 @@ static partial class Result
         Func<T1, ValueTask<Result<T2, TError>>> selector)
         where TError : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
-            return await selector(value);
+            return await selector(value).ConfigureAwait(false);
         }
         else
         {
@@ -240,10 +240,10 @@ static partial class Result
         Func<T1, TCollection, T2> resultSelector)
         where TError : notnull
     {
-        var result1 = await source;
+        var result1 = await source.ConfigureAwait(false);
         if (result1.TryGet(out var value1, out var error1))
         {
-            var result2 = await selector(value1);
+            var result2 = await selector(value1).ConfigureAwait(false);
             if (result2.TryGet(out var value2, out var error2))
             {
                 var result3 = resultSelector(value1, value2);
@@ -266,7 +266,7 @@ static partial class Result
         where TError1 : notnull
         where TError2 : notnull
     {
-        var result = await source;
+        var result = await source.ConfigureAwait(false);
         if (result.TryGet(out var value, out var error))
         {
             return Ok<T, TError2>(value);

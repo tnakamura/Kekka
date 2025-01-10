@@ -11,7 +11,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
 
     private readonly T? _value;
 
-    public Optional(T value)
+    internal Optional(T value)
     {
         _hasValue = true;
         _value = value;
@@ -49,6 +49,13 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
         {
             return EqualityComparer<T>.Default.Equals(_value, other._value);
         }
+        if (_hasValue is false &&
+            _value is null &&
+            other._hasValue is false &&
+            other._value is null)
+        {
+            return true;
+        }
         return false;
     }
 
@@ -75,4 +82,10 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
             return false;
         }
     }
+
+    public static bool operator ==(Optional<T> left, Optional<T> right)
+        => left.Equals(right);
+
+    public static bool operator !=(Optional<T> left, Optional<T> right)
+        => !(left == right);
 }

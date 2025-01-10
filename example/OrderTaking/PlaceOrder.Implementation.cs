@@ -326,14 +326,14 @@ public static class AcknowledgeOrderStep
             switch (sendAcknowledgment(acknowledgment))
             {
                 case SendResult.Sent:
-                    return new Optional<PlaceOrderEvent>(
+                    return Optional.Some<PlaceOrderEvent>(
                         new OrderAcknowledgmentSent(
                             OrderId: pricedOrder.OrderId,
                             EmailAddress: pricedOrder.CustomerInfo.EmailAddress));
                 case SendResult.NotSent:
-                    return Optional<PlaceOrderEvent>.None;
+                    return Optional.None<PlaceOrderEvent>();
                 default:
-                    return Optional<PlaceOrderEvent>.None;
+                    return Optional.None<PlaceOrderEvent>();
             }
         });
 }
@@ -345,14 +345,14 @@ public static class AcknowledgeOrderStep
 public static class CreateEventsStep
 {
     public static Optional<PlaceOrderEvent> CreateOrderPlacedEvent(PricedOrder placedOrder) =>
-        new Optional<PlaceOrderEvent>(new OrderPlaced(placedOrder));
+        Optional.Some<PlaceOrderEvent>(new OrderPlaced(placedOrder));
 
     public static Optional<PlaceOrderEvent> CreateBillingEvent(PricedOrder placedOrder)
     {
         var billingAmount = placedOrder.AmountToBill.Value;
         if (billingAmount > 0M)
         {
-            return new Optional<PlaceOrderEvent>(
+            return Optional.Some<PlaceOrderEvent>(
                 new BillableOrderPlaced(
                     OrderId: placedOrder.OrderId,
                     BillingAddress: placedOrder.BillingAddress,
@@ -360,7 +360,7 @@ public static class CreateEventsStep
         }
         else
         {
-            return Optional<PlaceOrderEvent>.None;
+            return Optional.None<PlaceOrderEvent>();
         }
     }
 

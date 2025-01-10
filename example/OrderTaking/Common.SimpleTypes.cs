@@ -193,7 +193,7 @@ internal static class ConstrainedType
         {
             if (string.IsNullOrEmpty(value))
             {
-                return Result.Ok<Optional<T>, string>(Optional<T>.None);
+                return Result.Ok<Optional<T>, string>(Optional.None<T>());
             }
             else if (value.Length > maxLen)
             {
@@ -207,7 +207,7 @@ internal static class ConstrainedType
         }
         else
         {
-            return Result.Ok<Optional<T>, string>(Optional<T>.None);
+            return Result.Ok<Optional<T>, string>(Optional.None<T>());
         }
     }
 
@@ -308,7 +308,7 @@ partial class String50
     /// Return Some if the input is valid
     /// </summary>
     public static Result<Optional<String50>, string> CreateOption(string fieldName, Optional<string> str) =>
-        ConstrainedType.CreateStringOption(fieldName, x => new Optional<String50>(new String50(x)), 50, str);
+        ConstrainedType.CreateStringOption(fieldName, x => Optional.Some(new String50(x)), 50, str);
 }
 
 partial class EmailAddress
