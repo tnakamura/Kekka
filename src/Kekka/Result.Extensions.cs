@@ -65,10 +65,6 @@ public static partial class Result
     }
 }
 
-/// <summary>
-/// Provides utility extension methods for <see cref="Result{T, TError}"/> that enable
-/// conversion to asynchronous types and collection operations.
-/// </summary>
 static partial class Result
 {
     /// <summary>
@@ -178,10 +174,6 @@ static partial class Result
     }
 }
 
-/// <summary>
-/// Provides LINQ extension methods for <see cref="Result{T, TError}"/> that enable
-/// functional programming patterns and Railway Oriented Programming.
-/// </summary>
 static partial class Result
 {
     /// <summary>
@@ -368,10 +360,6 @@ static partial class Result
     }
 }
 
-/// <summary>
-/// Provides asynchronous extension methods for <see cref="Task{TResult}"/> of <see cref="Result{T, TError}"/>
-/// that enable LINQ query syntax and Railway Oriented Programming patterns with async/await.
-/// </summary>
 static partial class Result
 {
     /// <summary>
@@ -540,10 +528,6 @@ static partial class Result
     }
 }
 
-/// <summary>
-/// Provides asynchronous extension methods for <see cref="ValueTask{TResult}"/> of <see cref="Result{T, TError}"/>
-/// that enable LINQ query syntax and Railway Oriented Programming patterns with high-performance async operations.
-/// </summary>
 static partial class Result
 {
     /// <summary>

@@ -52,10 +52,6 @@ public static partial class Optional
         => Optional<T>.None;
 }
 
-/// <summary>
-/// Provides extension methods for <see cref="Optional{T}"/> that enable LINQ query syntax
-/// and functional programming patterns.
-/// </summary>
 static partial class Optional
 {
     /// <summary>
@@ -195,10 +191,6 @@ static partial class Optional
     }
 }
 
-/// <summary>
-/// Provides asynchronous extension methods for <see cref="Task{TResult}"/> of <see cref="Optional{T}"/>
-/// that enable LINQ query syntax and functional programming patterns with async/await.
-/// </summary>
 static partial class Optional
 {
     /// <summary>
@@ -325,10 +317,6 @@ static partial class Optional
     }
 }
 
-/// <summary>
-/// Provides asynchronous extension methods for <see cref="ValueTask{TResult}"/> of <see cref="Optional{T}"/>
-/// that enable LINQ query syntax and functional programming patterns with high-performance async operations.
-/// </summary>
 static partial class Optional
 {
     /// <summary>
