@@ -1,4 +1,6 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Kekka;
 
@@ -13,7 +15,7 @@ namespace Kekka;
 /// This is a readonly struct that provides a functional approach to error handling,
 /// eliminating the need for exception-based control flow in many scenarios.
 /// </remarks>
-public readonly struct Result<T, TError>
+public readonly struct Result<T, TError> : IEquatable<Result<T, TError>>
     where TError : notnull
 {
     private readonly bool _hasValue;
@@ -152,6 +154,58 @@ public readonly struct Result<T, TError>
             error = _error!;
             return false;
         }
+    }
+
+    /// <inheritdoc/>
+    public bool Equals(Result<T, TError> other)
+    {
+        if (_hasValue != other._hasValue)
+        {
+            return false;
+        }
+        if (_hasValue)
+        {
+            return EqualityComparer<T>.Default.Equals(_value!, other._value!);
+        }
+        else
+        {
+            return EqualityComparer<TError>.Default.Equals(_error!, other._error!);
+        }
+    }
+
+    /// <inheritdoc/>
+    public override bool Equals(object? obj)
+    {
+        return obj is Result<T, TError> other && Equals(other);
+    }
+
+    /// <inheritdoc/>
+    public override int GetHashCode()
+    {
+        if (_hasValue)
+        {
+            return HashCode.Combine(_hasValue, _value);
+        }
+        else
+        {
+            return HashCode.Combine(_hasValue, _error);
+        }
+    }
+
+    /// <summary>
+    /// Determines whether two <see cref="Result{T, TError}"/> instances are equal.
+    /// </summary>
+    public static bool operator ==(Result<T, TError> left, Result<T, TError> right)
+    {
+        return left.Equals(right);
+    }
+
+    /// <summary>
+    /// Determines whether two <see cref="Result{T, TError}"/> instances are not equal.
+    /// </summary>
+    public static bool operator !=(Result<T, TError> left, Result<T, TError> right)
+    {
+        return !(left == right);
     }
 }
 
