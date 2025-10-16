@@ -86,17 +86,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
     /// </remarks>
     public T? Value => _value;
 
-    /// <summary>
-    /// Determines whether the specified object is equal to the current optional.
-    /// </summary>
-    /// <param name="obj">The object to compare with the current optional.</param>
-    /// <returns>
-    /// <c>true</c> if the specified object is equal to the current optional; otherwise, <c>false</c>.
-    /// </returns>
-    /// <remarks>
-    /// Two optionals are considered equal if they both contain values that are equal,
-    /// or if they are both empty (None).
-    /// </remarks>
+    /// <inheritdoc/>
     public override bool Equals(object? obj)
     {
         if (obj is Optional<T> other)
@@ -109,33 +99,13 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
         }
     }
 
-    /// <summary>
-    /// Returns the hash code for this optional.
-    /// </summary>
-    /// <returns>
-    /// A 32-bit signed integer hash code. If the optional contains a value,
-    /// returns the hash code of that value; otherwise, returns 0.
-    /// </returns>
+    /// <inheritdoc/>
     public override int GetHashCode()
     {
         return _value?.GetHashCode() ?? 0;
     }
 
-    /// <summary>
-    /// Determines whether the current optional is equal to another optional.
-    /// </summary>
-    /// <param name="other">An optional to compare with this optional.</param>
-    /// <returns>
-    /// <c>true</c> if the current optional is equal to the <paramref name="other"/> parameter;
-    /// otherwise, <c>false</c>.
-    /// </returns>
-    /// <remarks>
-    /// Two optionals are considered equal if:
-    /// <list type="bullet">
-    /// <item>Both contain values and those values are equal according to the default equality comparer.</item>
-    /// <item>Both are empty (None state).</item>
-    /// </list>
-    /// </remarks>
+    /// <inheritdoc/>
     public bool Equals(Optional<T> other)
     {
         if (_value is not null && other._value is not null)
@@ -152,18 +122,7 @@ public readonly struct Optional<T> : IEquatable<Optional<T>>, IEquatable<T>
         return false;
     }
 
-    /// <summary>
-    /// Determines whether the current optional contains a value equal to the specified value.
-    /// </summary>
-    /// <param name="other">A value to compare with the value contained in this optional.</param>
-    /// <returns>
-    /// <c>true</c> if the current optional contains a value equal to <paramref name="other"/>;
-    /// otherwise, <c>false</c>.
-    /// </returns>
-    /// <remarks>
-    /// If this optional is empty (None), this method always returns <c>false</c>,
-    /// regardless of the value of <paramref name="other"/>.
-    /// </remarks>
+    /// <inheritdoc/>
     public bool Equals(T? other)
     {
         if (_value is not null)
